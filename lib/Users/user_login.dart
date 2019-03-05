@@ -44,6 +44,7 @@ class _UserLogin extends State<UserLogin> {
   String _email;
   String _password;
 
+  String _vehicle_type;
   String _car;
   String _plate;
   File _image;
@@ -62,6 +63,8 @@ class _UserLogin extends State<UserLogin> {
   User gUser;
   final int beginCount = 30;
   bool isCheck = false;
+
+  List<String> _vehicles = <String>['','Car', 'Bike'];
 
   Future<Null> _launchInWebViewOrVC(String url) async {
     if (await canLaunch(url)) {
@@ -160,7 +163,7 @@ class _UserLogin extends State<UserLogin> {
                   '',
                   child: Padding(
                     padding: EdgeInsets.only(
-                      bottom: 20.0,
+                      bottom: 0.0,
                     ),
                     child: new Center(
                       child: new Stack(
@@ -271,6 +274,36 @@ class _UserLogin extends State<UserLogin> {
                         : null,
                     onSaved: (value) => _plate = value,
                   ),
+                ) +
+                textFields(
+                  '',
+                  child: new FormField(builder: (FormFieldState state) {
+                    return InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'VEHICLE TYPE',
+                          hintText: 'VEHICLE TYPE',
+                            labelStyle: TextStyle(color: Colors.white, fontSize: 15.0,), hintStyle: TextStyle(color: Colors.white, fontSize: 15.0,)
+                        ),
+                        isEmpty: _vehicle_type == '',
+                        child: new DropdownButtonHideUnderline(
+                          child: new DropdownButton(style: TextStyle(color: Colors.white, fontSize: 15.0, background: Paint()),
+                            value: _vehicle_type,
+                            isDense: true,
+                            onChanged: (String selectedValue) {
+                              setState(() {
+                                _vehicle_type = selectedValue;
+                              });
+                            },
+                            hint: new Text('Select Type of Vehicle'),
+                            items: _vehicles.map((value) {
+                              return new DropdownMenuItem(
+                                child: new Text(value, style: TextStyle(color: Colors.white),),
+                                value: value,
+                              );
+                            }).toList(),
+                          ),
+                        ));
+                  }),
                 )));
   }
 
@@ -419,6 +452,7 @@ class _UserLogin extends State<UserLogin> {
     _plate = '';
     _car = '';
     _imagePath = '';
+    _vehicle_type = '';
   }
 
   void loginUser() async {
@@ -593,6 +627,22 @@ class _UserLogin extends State<UserLogin> {
               context, 'Error', 'Password length should be greater that 6');
           return;
         }
+        if (_image == null) {
+          setState(() {
+            _inAsyncCall = false;
+          });
+          new Utils().neverSatisfied(
+              context, 'Error', 'Please upload an image');
+          return;
+        }
+        if (_vehicle_type.isEmpty) {
+          setState(() {
+            _inAsyncCall = false;
+          });
+          new Utils().neverSatisfied(
+              context, 'Error', 'Please select your vehicle type');
+          return;
+        }
         generated_code = Random().nextInt(999999).toString();
         print(generated_code);
         String message =
@@ -671,8 +721,22 @@ class _UserLogin extends State<UserLogin> {
       int alphaRan = Random().nextInt(25);
       refCode =
           'GD${_fullname.substring(0, 2).toUpperCase()}${alpha[alphaRan]}$ran';
-      User user = new User(id, _fullname, _email, _mobile, msgId, uid,
-          device_info, refCode, _car, _plate, '0.0', _imagePath, false, false);
+      User user = new User(
+          id,
+          _fullname,
+          _email,
+          _mobile,
+          msgId,
+          uid,
+          device_info,
+          refCode,
+          _vehicle_type,
+          _car,
+          _plate,
+          '0.0',
+          _imagePath,
+          false,
+          false);
       await ref
           .child(_email.toLowerCase().replaceAll('.', ','))
           .child("signup")
@@ -687,6 +751,7 @@ class _UserLogin extends State<UserLogin> {
         'uid': uid,
         'device_info': device_info,
         'referralCode': refCode,
+        'vehicle_type': _vehicle_type,
         'vehicle_model': _car,
         'vehicle_plate_number': _plate,
         'image': _imagePath,

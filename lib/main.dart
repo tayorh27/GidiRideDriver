@@ -7,6 +7,7 @@ import 'package:gidi_ride_driver/Users/user_login.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+//import 'package:map_view/map_view.dart';
 
 void main(){
   //MapView.setApiKey("AIzaSyDlMdDnOh3BQtZhF8gku4Xq1uFB-ZhLdig");
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'GidiRide',
+      title: 'GidiRide Drivers',
       theme: new ThemeData(
           fontFamily: 'Lato',
           primarySwatch: MaterialColor(0xFF21252E, <int, Color>{

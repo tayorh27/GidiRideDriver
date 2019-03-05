@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.grd.gidiridedriver">
 
     <!-- The INTERNET permission is required for development. Specifically,
@@ -18,10 +19,13 @@
     <application
         android:name="io.flutter.app.FlutterApplication"
         android:label="GidiRide Driver"
+        tools:replace="android:label,android:appComponentFactory"
+        android:appComponentFactory="whateverString"
         android:icon="@mipmap/ic_launcher">
 
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDlMdDnOh3BQtZhF8gku4Xq1uFB-ZhLdig"/>
+        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version"/>
 
         <activity
             android:name=".MainActivity"
@@ -46,5 +50,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity android:name="com.apptreesoftware.mapview.MapActivity" android:theme="@style/Theme.AppCompat.Light.DarkActionBar"/>
     </application>
 </manifest>

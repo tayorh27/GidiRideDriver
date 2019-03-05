@@ -344,7 +344,6 @@ class _MapFragment extends State<MapFragment> {
               children: <Widget>[
                 GoogleMap(
                   onMapCreated: _onMapCreated,
-                  options: GoogleMapOptions(
                       compassEnabled: false,
                       mapType: MapType.normal,
                       myLocationEnabled: true,
@@ -352,7 +351,7 @@ class _MapFragment extends State<MapFragment> {
                       rotateGesturesEnabled: true,
                       scrollGesturesEnabled: true,
                       tiltGesturesEnabled: true,
-                      zoomGesturesEnabled: true),
+                      zoomGesturesEnabled: true,
                 ),
                 new Container(
                     margin: EdgeInsets.only(top: 60.0, left: 13.0, right: 13.0),

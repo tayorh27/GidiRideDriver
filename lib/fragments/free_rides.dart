@@ -4,7 +4,7 @@ import 'package:gidi_ride_driver/Users/home_user.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:esys_flutter_share/esys_flutter_share.dart';
+//import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:flutter/services.dart';
 
 class FreeRides extends StatefulWidget {
@@ -145,12 +145,12 @@ class _FreeRides extends State<FreeRides> {
 
   Future _shareText() async {
     //ShareExtend.share('Hey there,\n\nClick here to download the GidiRide App\nhttps://goo.gl/xade\n\nEnjoy discount on your first ride when you use my referral code.\n\n$_refCode', 'text');
-    try {
-      await EsysFlutterShare.shareText(
-          'Hey there,\n\nClick here to download the GidiRide App\nhttps://goo.gl/xade\n\nEnjoy discount on your first ride when you use my referral code.\n\n$_refCode', 'GidiRide - Invite Friends');
-    } catch (e) {
-      print('error: $e');
-    }
+//    try {
+//      await EsysFlutterShare.shareText(
+//          'Hey there,\n\nClick here to download the GidiRide App\nhttps://goo.gl/xade\n\nEnjoy discount on your first ride when you use my referral code.\n\n$_refCode', 'GidiRide - Invite Friends');
+//    } catch (e) {
+//      print('error: $e');
+//    }
   }
 
   Future<void> loadRefPrice() async {

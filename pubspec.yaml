@@ -44,17 +44,21 @@ dev_dependencies:
   device_info: ^0.3.0
   common_utils: ^1.0.9
   flutter_countdown: ^0.1.4
-  #google_maps_flutter: ^0.0.3+3
+  #google_maps_flutter: ^0.3.0+2
+  google_maps_flutter:
+    git:
+      url: git://github.com/jan1za/plugins
+      path: packages/google_maps_flutter
   #bidirectional_scroll_view: ^0.0.6
-  esys_flutter_share: ^0.0.5
+  #esys_flutter_share: ^0.0.5
   flutter_google_places: ^0.1.4+1
   zendesk: ^0.0.1
   scrollable_bottom_sheet: ^0.0.4
   #share_extend: ^1.0.3
-  map_view: ^0.0.14
+  #map_view: ^0.0.14
   #fcm_push: ^1.3.1
   flutter_datetime_picker: ^1.0.6
-  rapido: ^0.1.7
+  #rapido: ^0.1.7
   screen: ^0.0.4
 
 

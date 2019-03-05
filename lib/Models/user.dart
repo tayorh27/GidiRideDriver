@@ -2,10 +2,10 @@ import 'package:firebase_database/firebase_database.dart';
 
 class User {
 
-  String id, fullname,email,number,msgId,uid,device_info, referralCode,vehicle_model,vehicle_plate_number,rating,image;
+  String id, fullname,email,number,msgId,uid,device_info, referralCode,vehicle_type, vehicle_model,vehicle_plate_number,rating,image;
   bool userBlocked, userVerified;
 
-  User(this.id, this.fullname, this.email, this.number, this.msgId,this.uid,this.device_info, this.referralCode, this.vehicle_model, this.vehicle_plate_number, this.rating, this.image,
+  User(this.id, this.fullname, this.email, this.number, this.msgId,this.uid,this.device_info, this.referralCode, this.vehicle_type, this.vehicle_model, this.vehicle_plate_number, this.rating, this.image,
       this.userBlocked, this.userVerified);
 
 //  Map<String, dynamic> toJSON() {
@@ -30,6 +30,7 @@ class User {
     uid = snapshot.value['uid'];
     device_info = snapshot.value['device_info'];
     referralCode = snapshot.value['referralCode'];
+    vehicle_type = snapshot.value['vehicle_type'];
     vehicle_model = snapshot.value['vehicle_model'];
     vehicle_plate_number = snapshot.value['vehicle_plate_number'];
     rating = snapshot.value['rating'];

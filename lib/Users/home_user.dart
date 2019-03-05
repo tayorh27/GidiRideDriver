@@ -6,6 +6,7 @@ import 'package:gidi_ride_driver/Models/user.dart';
 import 'package:gidi_ride_driver/Users/user_login.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
+import 'package:gidi_ride_driver/fragments/driver_home_page.dart';
 import 'package:gidi_ride_driver/fragments/first_fragment.dart';
 import 'package:gidi_ride_driver/fragments/free_rides.dart';
 import 'package:gidi_ride_driver/fragments/help.dart';
@@ -61,7 +62,7 @@ class _UserHomePage extends State<UserHomePage> {
   _getDrawerItemWidget(int pos) {
     switch (pos) {
       case 0:
-        return new MapFragment();
+        return new DriverPage();
       case 1:
         //_closeAppBar();
         return new MyTrips();
@@ -78,7 +79,7 @@ class _UserHomePage extends State<UserHomePage> {
         //_closeAppBar();
         return new LegalPage();
       default:
-        return new MapFragment();
+        return new DriverPage();
     }
   }
 
@@ -168,10 +169,6 @@ class _UserHomePage extends State<UserHomePage> {
                                     ? AssetImage('user_dp.png')
                                     : NetworkImage(_image),
                               ))),
-                    ),
-                    new Divider(
-                      color: Color(MyColors().secondary_color),
-                      height: 1.0,
                     ),
                     new Column(children: drawerOptions),
                     new Container(

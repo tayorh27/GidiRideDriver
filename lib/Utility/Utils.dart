@@ -142,6 +142,7 @@ class Utils {
           pref.getString('uid'),
           pref.getString('device_info'),
           pref.getString('referralCode'),
+          pref.getString('vehicle_type'),
           pref.getString('vehicle_model'),
           pref.getString('vehicle_plate_number'),
           pref.getString('rating'),
