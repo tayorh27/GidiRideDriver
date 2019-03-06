@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:android_alarm_manager/android_alarm_manager.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gidi_ride_driver/Models/fares.dart';
 import 'package:gidi_ride_driver/Models/favorite_places.dart';
+import 'package:gidi_ride_driver/Models/general_promotion.dart';
+import 'package:gidi_ride_driver/Models/payment_method.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -17,7 +21,6 @@ import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 //import 'package:map_view/map_view.dart';
-
 
 class DriverPage extends StatefulWidget {
   @override
@@ -47,6 +50,7 @@ class _DriverPage extends State<DriverPage> {
   String error;
   final dateFormat = DateFormat("EEEE, MMMM d, yyyy 'at' h:mma");
   Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+  bool isGeneralTripsLoaded = false;
 
 //  PaymentMethods _method = null;
 //  GeneralPromotions _general_promotion = null;
@@ -69,8 +73,14 @@ class _DriverPage extends State<DriverPage> {
 //  bool isCash = false,
 //      isRefreshing = true,
 //      isBottomSheet = false,
-  bool _inAsyncCall = false;
-  List<DataSnapshot> _snapshots = new List();
+  bool _inAsyncCall = false, isDriverVerified = false;
+  List<dynamic> _snapshots = new List();
+  DataSnapshot currentTripSnapshot;
+  bool driver_has_accepted = false,
+      driver_going_to_pickup = false,
+      driver_delivery_item = false;
+  String button_title = 'Go to pickup';
+  int button_index = 0;
 
 //  String payment_type = '';
 //  String promotion_type = '';
@@ -101,9 +111,7 @@ class _DriverPage extends State<DriverPage> {
     super.initState();
     Screen.keepOn(true);
     //listenForDestinationEntered();
-    getGeneralTrips();
     initPlatformState();
-
     _locationSubscription =
         _location.onLocationChanged().listen((Map<String, double> result) {
       double lat = result["latitude"];
@@ -239,8 +247,12 @@ class _DriverPage extends State<DriverPage> {
         _number = pref.getString('number');
         _msg = pref.getString('msgId');
         _vehicle_type = pref.getString('vehicle_type');
+        isDriverVerified = pref.getBool('userVerified');
       });
     });
+    if (!isGeneralTripsLoaded) {
+      getGeneralTrips();
+    }
     // TODO: implement build
     return Scaffold(
         body: ModalProgressHUD(
@@ -272,9 +284,12 @@ class _DriverPage extends State<DriverPage> {
                           EdgeInsets.only(top: 60.0, left: 13.0, right: 13.0),
                       child: new Column(
                         children: <Widget>[
-                          (_snapshots.length > 0)
-                              ? buildSliderForTrips()
+                          (!driver_has_accepted)
+                              ? (_snapshots.length > 0)
+                                  ? buildSliderForTrips()
+                                  : new Text('')
                               : new Text(''),
+                          driverHasAcceptedATrip(),
                         ],
                       )),
                 ]))));
@@ -282,65 +297,278 @@ class _DriverPage extends State<DriverPage> {
 
   Widget buildSliderForTrips() {
     return new SizedBox(
-        height: 400.0,
+        height: 220.0,
         child: CarouselSlider(
-          height: 400.0,
+          height: 220.0,
           autoPlay: false,
-          items: _snapshots.map((snap) {
-            return Builder(builder: (BuildContext context) {
-              FavoritePlaces fp =
-                  FavoritePlaces.fromJson(snap.value['current_location']);
-              return Container(
-                color: Color(MyColors().primary_color),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    new ListTile(
-                      title: new Text(
-                        'Pickup location',
-                        style: TextStyle(color: Colors.white, fontSize: 16.0),
-                      ),
-                      subtitle: new Text(
-                        fp.loc_name,
-                        style: TextStyle(color: Colors.white, fontSize: 14.0),
-                      ),
-                    ),
-                    new ListTile(
-                      title: new Text(
-                        'Scheduled for',
-                        style: TextStyle(color: Colors.white, fontSize: 16.0),
-                      ),
-                      subtitle: new Text(
-                        snap.value['scheduled_date'].toString(),
-                        style: TextStyle(color: Colors.white, fontSize: 14.0),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            });
-          }).toList(),
+          enlargeCenterPage: true,
+          items: carouselChildren(),
         ));
   }
+
+  Widget driverHasAcceptedATrip() {
+    return Container(
+        color: Color(MyColors().primary_color),
+        width: MediaQuery.of(context).size.width,
+        alignment: Alignment.bottomCenter,
+        height: 250.0,
+        margin:
+            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 250.0)),
+        child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              new ListTile(
+                leading: new Container(
+                    width: 100.0,
+                    height: 100.0,
+                    decoration: new BoxDecoration(
+                        shape: BoxShape.circle,
+                        image: new DecorationImage(
+                            fit: BoxFit.cover,
+                            image: AssetImage('user_dp.png')))),
+              ),
+              new Container(
+                margin: EdgeInsets.only(left: 13.0, right: 13.0),
+                child: Padding(
+                  padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
+                  child: new RaisedButton(
+                    child: new Text(button_title,
+                        style: new TextStyle(
+                            fontSize: 18.0,
+                            color: Color(MyColors().button_text_color))),
+                    color: Color(MyColors().secondary_color),
+                    disabledColor: Colors.grey,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                    ),
+                    onPressed: () {
+                      _performButtonOperation(button_index);
+                    },
+                    //buttonDisabled
+                    padding: EdgeInsets.all(15.0),
+                  ),
+                ),
+              ),
+            ]));
+  }
+
+  void _performButtonOperation(int index) {}
+
+  List<Widget> carouselChildren() {
+    List<Widget> mWidgets = new List();
+    _snapshots.forEach((snap) {
+      FavoritePlaces fp = FavoritePlaces.fromJson(snap['current_location']);
+      DateTime scheduled_date =
+          DateTime.parse(snap['scheduled_date'].toString());
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sept",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
+      mWidgets.add(Container(
+        color: Color(MyColors().primary_color),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            new ListTile(
+              title: new Text(
+                'Pickup location',
+                style: TextStyle(color: Colors.white, fontSize: 16.0),
+              ),
+              subtitle: new Text(
+                fp.loc_name,
+                style: TextStyle(color: Colors.white, fontSize: 14.0),
+              ),
+              leading: Icon(
+                Icons.my_location,
+                color: Colors.green,
+              ),
+            ),
+            new ListTile(
+              title: new Text(
+                'Scheduled for',
+                style: TextStyle(color: Colors.white, fontSize: 16.0),
+              ),
+              subtitle: new Text(
+                '${months[scheduled_date.month]}.${scheduled_date.day}.${scheduled_date.year}',
+                style: TextStyle(color: Colors.white, fontSize: 14.0),
+              ),
+              leading: Icon(
+                Icons.date_range,
+                color: Colors.white,
+              ),
+            ),
+            new Container(
+              margin: EdgeInsets.only(left: 13.0, right: 13.0),
+              child: Padding(
+                padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
+                child: new RaisedButton(
+                  child: new Text('Accept Trip',
+                      style: new TextStyle(
+                          fontSize: 18.0,
+                          color: Color(MyColors().button_text_color))),
+                  color: Color(MyColors().secondary_color),
+                  disabledColor: Colors.grey,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                  ),
+                  onPressed: () {
+                    _acceptTrip(snap);
+                  },
+                  //buttonDisabled
+                  padding: EdgeInsets.all(15.0),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ));
+    });
+    return mWidgets;
+  }
+
+  void _acceptTrip(dynamic values) {
+    showDialog<Null>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return new AlertDialog(
+          title: new Text('Confirmation'),
+          content: new SingleChildScrollView(
+            child: new ListBody(
+              children: <Widget>[
+                new Text('Are you sure you want to accept this trip'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            new FlatButton(
+              child: new Text(
+                'Continue',
+                style: TextStyle(color: Color(MyColors().primary_color)),
+              ),
+              onPressed: () {
+                _tripAcceptedByDriver(values);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _tripAcceptedByDriver(dynamic values) async {
+    FavoritePlaces fp = FavoritePlaces.fromJson(values['current_location']);
+    FavoritePlaces fp2 = FavoritePlaces.fromJson(values['destination']);
+    PaymentMethods pm =
+        (!values['card_trip']) ? PaymentMethods.fromJson(values['']) : null;
+    GeneralPromotions gp = GeneralPromotions.fromJson(values['promotions']);
+    Fares fares = Fares.fromJson(values['fare']);
+
+    DatabaseReference genRef = FirebaseDatabase.instance
+        .reference()
+        .child('general_trips/${values['id'].toString()}');
+    await genRef.update({'assigned_driver': _email}).whenComplete(() {
+      DatabaseReference userRef = FirebaseDatabase.instance.reference().child(
+          'users/${values['rider_email'].toString().replaceAll('.', ',')}/trips');
+      userRef
+          .child('incoming/${values['id'].toString()}')
+          .update({'assigned_driver': _email}).whenComplete(() {
+        userRef.child('status').update(
+            {'current_ride_status': 'driver accepted'}).whenComplete(() {
+          DatabaseReference driverRef = FirebaseDatabase.instance
+              .reference()
+              .child('driver/${_email.replaceAll('.', ',')}/accepted_trip');
+          driverRef.set({
+            'id': '${values['id'].toString()}',
+            'status': 'awaiting pickup',
+            'trip_details': {
+              'id': values['id'].toString(),
+              'current_location': fp.toJSON(),
+              'destination': fp2.toJSON(),
+              'trip_distance': values['trip_distance'],
+              'trip_duration': values['trip_duration'],
+              'payment_method': (!values['card_trip']) ? pm.toJSON() : 'cash',
+              'vehicle_type': values['vehicle_type'],
+              'promotion': (gp != null) ? gp.toJSON() : 'no_promo',
+              'card_trip': (!values['card_trip']) ? true : false,
+              'promo_used': (gp != null) ? true : false,
+              'scheduled_date': values['scheduled_date'].toString(),
+              'status': 'incoming',
+              'created_date': values['created_date'].toString(),
+              'price_range': values['price_range'].toString(),
+              'fare': fares.toJSON(),
+              'assigned_driver': _email,
+              'rider_email': values['rider_email'].toString(),
+              'rider_name': values['rider_name'].toString(),
+              'rider_number': values['rider_number'].toString(),
+              'rider_msgId': values['rider_msgId'].toString()
+            }
+          }).whenComplete(() async {
+            //send notification to user saying a driver has accepted your trip
+            //also schedule the time
+            new Utils().sendNotification(
+                'GidiRide Booking Status',
+                'Your trip has been accepted by one of our driver. Your ride will be attended to in due time.',
+                values['rider_msgId']);
+            DateTime future_date =
+                DateTime.parse(values['scheduled_date'].toString());
+            DateTime now_date = DateTime.now();
+            int diff = future_date.difference(now_date).inMinutes;
+            int helloAlarmID = 0;
+            await AndroidAlarmManager.oneShot(
+                Duration(minutes: diff), helloAlarmID, alertDriver);
+            setState(() {
+              driver_has_accepted = true;
+            });
+          });
+        });
+      });
+    });
+  }
+
+  void alertDriver() {}
 
   Future<void> getGeneralTrips() async {
     DatabaseReference genRef =
         FirebaseDatabase.instance.reference().child('general_trips');
-    await genRef.once().asStream().toList().then((ls) {
-      new Utils().neverSatisfied(context, 'msg', 'snapshot length = ${ls.length}');
-      if (ls != null) {
-        setState(() {
-          ls.forEach((sp) {
-            if (sp.value['vehicle_type'].toString().toLowerCase() ==
-                    _vehicle_type.toLowerCase() &&
-                sp.value['assigned_driver'].toString() == 'none') {
-              _snapshots.add(sp);
-            }
-          });
+    genRef.onValue.listen((ls) {
+      _snapshots.clear();
+      //new Utils().neverSatisfied(context, 'msg', 'snapshot length = ${ls.asMap()[0].value['id'].toString()}');
+      if (ls.snapshot != null) {
+        Map<dynamic, dynamic> values = ls.snapshot.value;
+        values.forEach((key, vals) {
+          if (vals['vehicle_type'].toString().toLowerCase() ==
+                  _vehicle_type.toLowerCase() &&
+              vals['assigned_driver'].toString() == 'none') {
+            setState(() {
+              _snapshots.add(vals);
+            });
+          }
         });
       }
+      setState(() {
+        isGeneralTripsLoaded = true;
+      });
     });
   }
 }

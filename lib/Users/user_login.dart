@@ -63,7 +63,7 @@ class _UserLogin extends State<UserLogin> {
   final int beginCount = 30;
   bool isCheck = false;
 
-  List<String> _vehicles = <String>['','Car', 'Bike'];
+  List<String> _vehicles = <String>['', 'Car', 'Bike'];
 
   Future<Null> _launchInWebViewOrVC(String url) async {
     if (await canLaunch(url)) {
@@ -279,13 +279,23 @@ class _UserLogin extends State<UserLogin> {
                   child: new FormField(builder: (FormFieldState state) {
                     return InputDecorator(
                         decoration: InputDecoration(
-                          labelText: 'VEHICLE TYPE',
-                          hintText: 'VEHICLE TYPE',
-                            labelStyle: TextStyle(color: Colors.white, fontSize: 15.0,), hintStyle: TextStyle(color: Colors.white, fontSize: 15.0,)
-                        ),
+                            labelText: 'VEHICLE TYPE',
+                            hintText: 'VEHICLE TYPE',
+                            labelStyle: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.0,
+                            ),
+                            hintStyle: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.0,
+                            )),
                         isEmpty: _vehicle_type == '',
                         child: new DropdownButtonHideUnderline(
-                          child: new DropdownButton(style: TextStyle(color: Colors.white, fontSize: 15.0, background: Paint()),
+                          child: new DropdownButton(
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.0,
+                                background: Paint()),
                             value: _vehicle_type,
                             isDense: true,
                             onChanged: (String selectedValue) {
@@ -296,7 +306,10 @@ class _UserLogin extends State<UserLogin> {
                             hint: new Text('Select Type of Vehicle'),
                             items: _vehicles.map((value) {
                               return new DropdownMenuItem(
-                                child: new Text(value, style: TextStyle(color: Colors.white),),
+                                child: new Text(
+                                  value,
+                                  style: TextStyle(color: Colors.white),
+                                ),
                                 value: value,
                               );
                             }).toList(),
@@ -630,8 +643,8 @@ class _UserLogin extends State<UserLogin> {
           setState(() {
             _inAsyncCall = false;
           });
-          new Utils().neverSatisfied(
-              context, 'Error', 'Please upload an image');
+          new Utils()
+              .neverSatisfied(context, 'Error', 'Please upload an image');
           return;
         }
         if (_vehicle_type.isEmpty) {
@@ -734,6 +747,7 @@ class _UserLogin extends State<UserLogin> {
           _plate,
           '0.0',
           _imagePath,
+          'offline',
           false,
           false);
       await ref

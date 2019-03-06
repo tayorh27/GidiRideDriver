@@ -1,16 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:android_alarm_manager/android_alarm_manager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gidi_ride_driver/Users/home_user.dart';
 import 'package:gidi_ride_driver/Users/user_login.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 //import 'package:map_view/map_view.dart';
 
-void main(){
+void main() async{
   //MapView.setApiKey("AIzaSyDlMdDnOh3BQtZhF8gku4Xq1uFB-ZhLdig");
+  await AndroidAlarmManager.initialize();
   runApp(new MyApp());
 }
 

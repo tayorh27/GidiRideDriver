@@ -1183,7 +1183,7 @@ class _MapFragment extends State<MapFragment> {
     });
   }
 
-  Future<void> getDriverDetails(String assigned_driver) async {
+  Future<void> `getDriverDetails(String assigned_driver) async {
     DatabaseReference driverRef = FirebaseDatabase.instance
         .reference()
         .child('drivers/${assigned_driver.replaceAll('.', ',')}');
