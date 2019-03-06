@@ -2,22 +2,21 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:device_info/device_info.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gidi_ride_driver/Models/user.dart';
 import 'package:gidi_ride_driver/Users/welcome_next.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
-import 'package:gidi_ride_driver/Utility/email_body.dart';
-import 'package:modal_progress_hud/modal_progress_hud.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:device_info/device_info.dart';
-import 'package:flutter/services.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 

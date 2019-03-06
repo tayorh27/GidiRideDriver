@@ -1,14 +1,11 @@
-import 'dart:convert';
-
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 import 'package:gidi_ride_driver/Models/favorite_places.dart';
 import 'package:gidi_ride_driver/Models/general_promotion.dart';
-import 'package:gidi_ride_driver/Models/trip.dart';
 import 'package:gidi_ride_driver/Users/home_user.dart';
 import 'package:gidi_ride_driver/Users/trip_info.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

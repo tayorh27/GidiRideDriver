@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:gidi_ride_driver/Models/driver.dart';
 import 'package:gidi_ride_driver/Models/fares.dart';
@@ -16,18 +18,16 @@ import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:gidi_ride_driver/fragments/payment.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-//import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 import 'package:google_maps_webservice/places.dart';
-import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:location/location.dart' as loc;
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:screen/screen.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
+import 'package:screen/screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+//import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
+
 
 class MapFragment extends StatefulWidget {
   @override

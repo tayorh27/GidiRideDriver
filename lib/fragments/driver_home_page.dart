@@ -1,20 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:gidi_ride_driver/Models/favorite_places.dart';
+import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_webservice/places.dart' as places;
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-
-//import 'package:map_view/map_view.dart';
+import 'package:location/location.dart' as loc;
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:location/location.dart' as loc;
-import 'package:http/http.dart' as http;
+//import 'package:map_view/map_view.dart';
 
-import 'package:flutter/services.dart';
 
 class DriverPage extends StatefulWidget {
   @override
@@ -29,7 +32,7 @@ places.GoogleMapsPlaces _places =
     places.GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
 class _DriverPage extends State<DriverPage> {
-  String _email = '', _number = '', _name = '', _msg = '';
+  String _email = '', _number = '', _name = '', _msg = '', _vehicle_type = '';
   DatabaseReference locationRef;
 
   DialogType dialogType = DialogType.request;
@@ -66,7 +69,9 @@ class _DriverPage extends State<DriverPage> {
 //  bool isCash = false,
 //      isRefreshing = true,
 //      isBottomSheet = false,
-//      _inAsyncCall = false;
+  bool _inAsyncCall = false;
+  List<DataSnapshot> _snapshots = new List();
+
 //  String payment_type = '';
 //  String promotion_type = '';
 //  double request_progress = null;
@@ -96,7 +101,7 @@ class _DriverPage extends State<DriverPage> {
     super.initState();
     Screen.keepOn(true);
     //listenForDestinationEntered();
-    //getBookingFares();
+    getGeneralTrips();
     initPlatformState();
 
     _locationSubscription =
@@ -114,7 +119,6 @@ class _DriverPage extends State<DriverPage> {
 
   void updateMapCamera(double lat, double lng) {
     mapController.clearMarkers();
-    //_mapView.markers.clear();
     if (dialogType == DialogType.request) {
       mapController.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -167,9 +171,18 @@ class _DriverPage extends State<DriverPage> {
   }
 
   Future<void> getMapLocation(double lat, double lng) async {
+    locationRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/location');
+    locationRef.set({
+      'location_name': 'not set',
+      'location_address': 'not set',
+      'latitude': '$lat',
+      'longitude': '$lng'
+    });
     String url =
         'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$api_key';
-    http.get(url).then((res) async {
+    await http.get(url).then((res) async {
       //new Utils().neverSatisfied(context, 'msg', res.body);
       Map<String, dynamic> resp = json.decode(res.body);
       String status = resp['status'];
@@ -183,10 +196,7 @@ class _DriverPage extends State<DriverPage> {
         String _lat = detail.result.geometry.location.lat.toString();
         String _lng = detail.result.geometry.location.lng.toString();
 
-        locationRef = FirebaseDatabase.instance
-            .reference()
-            .child('drivers/${_email.replaceAll('.', ',')}/location');
-        locationRef.set({
+        locationRef.update({
           'location_name': loc_name,
           'location_address': loc_address,
           'latitude': _lat,
@@ -220,13 +230,6 @@ class _DriverPage extends State<DriverPage> {
     });
   }
 
-//  void showMap() {
-//    _mapView.show(new MapOptions(showUserLocation: true,
-//      showCompassButton: true,
-//      mapViewType: MapViewType.normal,
-//      showMyLocationButton: true,));
-//  }
-
   @override
   Widget build(BuildContext context) {
     _prefs.then((pref) {
@@ -235,38 +238,109 @@ class _DriverPage extends State<DriverPage> {
         _name = pref.getString('fullname');
         _number = pref.getString('number');
         _msg = pref.getString('msgId');
+        _vehicle_type = pref.getString('vehicle_type');
       });
     });
     // TODO: implement build
     return Scaffold(
-      body: new Container(
-          child: new Stack(
-              overflow: Overflow.clip,
-              fit: StackFit.passthrough,
-              children: <Widget>[
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                  target: LatLng(0.0,
-                      0.0)),
-              onMapCreated: _onMapCreated,
-              compassEnabled: false,
-              mapType: MapType.normal,
-              myLocationEnabled: true,
-              trackCameraPosition: true,
-              rotateGesturesEnabled: true,
-              scrollGesturesEnabled: true,
-              tiltGesturesEnabled: true,
-              zoomGesturesEnabled: true,
-              myLocationButtonEnabled: true,
-            ),
-            new Container(
-                margin: EdgeInsets.only(top: 60.0, left: 13.0, right: 13.0),
-                child: new Column(
-                  children: <Widget>[
+        body: ModalProgressHUD(
+            inAsyncCall: _inAsyncCall,
+            opacity: 0.5,
+            progressIndicator: CircularProgressIndicator(),
+            color: Color(MyColors().button_text_color),
+            child: new Container(
+                child: new Stack(
+                    overflow: Overflow.clip,
+                    fit: StackFit.passthrough,
+                    children: <Widget>[
+                  GoogleMap(
+                    initialCameraPosition:
+                        CameraPosition(target: LatLng(0.0, 0.0)),
+                    onMapCreated: _onMapCreated,
+                    compassEnabled: false,
+                    mapType: MapType.normal,
+                    myLocationEnabled: true,
+                    trackCameraPosition: true,
+                    rotateGesturesEnabled: true,
+                    scrollGesturesEnabled: true,
+                    tiltGesturesEnabled: true,
+                    zoomGesturesEnabled: true,
+                    myLocationButtonEnabled: true,
+                  ),
+                  new Container(
+                      margin:
+                          EdgeInsets.only(top: 60.0, left: 13.0, right: 13.0),
+                      child: new Column(
+                        children: <Widget>[
+                          (_snapshots.length > 0)
+                              ? buildSliderForTrips()
+                              : new Text(''),
+                        ],
+                      )),
+                ]))));
+  }
 
+  Widget buildSliderForTrips() {
+    return new SizedBox(
+        height: 400.0,
+        child: CarouselSlider(
+          height: 400.0,
+          autoPlay: false,
+          items: _snapshots.map((snap) {
+            return Builder(builder: (BuildContext context) {
+              FavoritePlaces fp =
+                  FavoritePlaces.fromJson(snap.value['current_location']);
+              return Container(
+                color: Color(MyColors().primary_color),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    new ListTile(
+                      title: new Text(
+                        'Pickup location',
+                        style: TextStyle(color: Colors.white, fontSize: 16.0),
+                      ),
+                      subtitle: new Text(
+                        fp.loc_name,
+                        style: TextStyle(color: Colors.white, fontSize: 14.0),
+                      ),
+                    ),
+                    new ListTile(
+                      title: new Text(
+                        'Scheduled for',
+                        style: TextStyle(color: Colors.white, fontSize: 16.0),
+                      ),
+                      subtitle: new Text(
+                        snap.value['scheduled_date'].toString(),
+                        style: TextStyle(color: Colors.white, fontSize: 14.0),
+                      ),
+                    ),
                   ],
-                )),
-          ])),
-    );
+                ),
+              );
+            });
+          }).toList(),
+        ));
+  }
+
+  Future<void> getGeneralTrips() async {
+    DatabaseReference genRef =
+        FirebaseDatabase.instance.reference().child('general_trips');
+    await genRef.once().asStream().toList().then((ls) {
+      new Utils().neverSatisfied(context, 'msg', 'snapshot length = ${ls.length}');
+      if (ls != null) {
+        setState(() {
+          ls.forEach((sp) {
+            if (sp.value['vehicle_type'].toString().toLowerCase() ==
+                    _vehicle_type.toLowerCase() &&
+                sp.value['assigned_driver'].toString() == 'none') {
+              _snapshots.add(sp);
+            }
+          });
+        });
+      }
+    });
   }
 }

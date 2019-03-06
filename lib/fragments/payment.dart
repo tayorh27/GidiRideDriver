@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_paystack/flutter_paystack.dart';
 import 'package:gidi_ride_driver/Models/general_promotion.dart';
 import 'package:gidi_ride_driver/Models/payment_method.dart';
 import 'package:gidi_ride_driver/Users/home_user.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
+import 'package:http/http.dart' as http;
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_paystack/flutter_paystack.dart';
-import 'package:http/http.dart' as http;
 
 class Payment extends StatefulWidget {
 

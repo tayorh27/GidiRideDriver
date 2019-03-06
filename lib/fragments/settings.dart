@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:gidi_ride_driver/Models/favorite_places.dart';
 import 'package:gidi_ride_driver/Users/home_user.dart';
 import 'package:gidi_ride_driver/Users/user_login.dart';
@@ -8,7 +9,6 @@ import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_google_places/flutter_google_places.dart';
 
 class Settings extends StatefulWidget {
   @override

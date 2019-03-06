@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating/flutter_rating.dart';
 import 'package:gidi_ride_driver/Models/driver.dart';
 import 'package:gidi_ride_driver/Models/reviews.dart';
 import 'package:gidi_ride_driver/Users/home_user.dart';
@@ -7,7 +8,6 @@ import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_rating/flutter_rating.dart';
 
 class ReviewDriver extends StatefulWidget {
   String driver_email;

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +8,6 @@ import 'package:gidi_ride_driver/Users/user_login.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:gidi_ride_driver/fragments/driver_home_page.dart';
-import 'package:gidi_ride_driver/fragments/first_fragment.dart';
-import 'package:gidi_ride_driver/fragments/free_rides.dart';
 import 'package:gidi_ride_driver/fragments/help.dart';
 import 'package:gidi_ride_driver/fragments/legal.dart';
 import 'package:gidi_ride_driver/fragments/payment.dart';
