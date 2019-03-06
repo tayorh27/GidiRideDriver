@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -1134,7 +1135,7 @@ class _MapFragment extends State<MapFragment> {
         }
       });
     } catch (e) {
-      new Utils().neverSatisfied(context, 'error', '${e.toString()}');
+      print('${e.toString()}');
     }
   }
 
@@ -1183,7 +1184,7 @@ class _MapFragment extends State<MapFragment> {
     });
   }
 
-  Future<void> `getDriverDetails(String assigned_driver) async {
+  Future<void> getDriverDetails(String assigned_driver) async {
     DatabaseReference driverRef = FirebaseDatabase.instance
         .reference()
         .child('drivers/${assigned_driver.replaceAll('.', ',')}');

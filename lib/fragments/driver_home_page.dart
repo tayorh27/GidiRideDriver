@@ -20,6 +20,7 @@ import 'package:location/location.dart' as loc;
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 //import 'package:map_view/map_view.dart';
 
 class DriverPage extends StatefulWidget {
@@ -27,7 +28,7 @@ class DriverPage extends StatefulWidget {
   State<StatefulWidget> createState() => _DriverPage();
 }
 
-enum DialogType { request, arriving, driving }
+enum DialogType { request, driving }
 
 const kGoogleApiKey = "AIzaSyBEtkYnNolbg_c7aKZkFuqlq_V_4TIyveI";
 const api_key = 'AIzaSyBEtkYnNolbg_c7aKZkFuqlq_V_4TIyveI';
@@ -60,6 +61,8 @@ class _DriverPage extends State<DriverPage> {
 //  FavoritePlaces destination_location = null;
 //
   GoogleMapController mapController;
+  int _polylineCount = 0;
+  Polyline _selectedPolyline;
 
   //Completer<GoogleMapController> _controller = Completer();
   //var _mapView = new MapView();
@@ -85,7 +88,8 @@ class _DriverPage extends State<DriverPage> {
 //  String payment_type = '';
 //  String promotion_type = '';
 //  double request_progress = null;
-//  String trip_distance = '0 km', trip_duration = '0 min';
+  String trip_distance = '0 km', trip_duration = '0 min';
+
 //  int trip_calculation;
 //  Fares car_fares = null;
 //  Fares bike_fare = null;
@@ -144,37 +148,65 @@ class _DriverPage extends State<DriverPage> {
           infoWindowText: InfoWindowText('Your location', '')));
       getMapLocation(lat, lng);
     }
-    if (dialogType == DialogType.arriving) {
-      if (!_locationSubscription.isPaused) {
-        _locationSubscription.pause();
-      }
-//      mapController.animateCamera(CameraUpdate.newCameraPosition(
-//        CameraPosition(
-//          bearing: 90.0,
-//          target: LatLng(lat, lng),
-//          tilt: 30.0,
-//          zoom: 20.0,
-//        ),
-//      ));
-//      mapController.addMarker(MarkerOptions(
-//          position: LatLng(lat, lng),
-//          alpha: 1.0,
-//          draggable: false,
-//          icon: BitmapDescriptor.fromAsset('map_car.png'),
-//          infoWindowText:
-//          InfoWindowText('Driver location', '${driverDetails.fullname}')));
-    }
     if (dialogType == DialogType.driving) {
-      if (!_locationSubscription.isPaused) {
-        _locationSubscription.pause();
-      }
-//      mapController.addMarker(MarkerOptions(
-//          position: LatLng(lat, lng),
-//          alpha: 1.0,
-//          draggable: false,
-//          icon: BitmapDescriptor.defaultMarker,
-//          infoWindowText: InfoWindowText(
-//              'Your Destination', '${destination_location.loc_name}')));
+      Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+      FavoritePlaces destination = FavoritePlaces.fromJson(cts['destination']);
+      mapController.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(
+          bearing: 90.0,
+          target: LatLng(lat, lng),
+          tilt: 30.0,
+          zoom: 20.0,
+        ),
+      ));
+      mapController.addMarker(MarkerOptions(
+          position: LatLng(lat, lng),
+          alpha: 1.0,
+          draggable: false,
+          icon: BitmapDescriptor.fromAsset('map_car.png'),
+          infoWindowText: InfoWindowText('Your location', '')));
+      mapController.addMarker(MarkerOptions(
+          position: LatLng(double.parse(destination.latitude),
+              double.parse(destination.longitude)),
+          alpha: 1.0,
+          draggable: false,
+          icon: BitmapDescriptor.defaultMarker,
+          infoWindowText: InfoWindowText('Your location', '')));
+      locationRef = FirebaseDatabase.instance
+          .reference()
+          .child('drivers/${_email.replaceAll('.', ',')}/location');
+      locationRef.set({
+        'location_name': 'not set',
+        'location_address': 'not set',
+        'latitude': '$lat',
+        'longitude': '$lng'
+      });
+      getDistanceDirection(lat, lng, destination.latitude, destination.longitude);
+      //add polyline
+      //insert trip distance and duration also
+    }
+  }
+
+  Future<void> getDistanceDirection(double lat, double lng, String dest_lat, String dest_lng) async {
+    try {
+      String url =
+          'https://maps.googleapis.com/maps/api/distancematrix/json?origins=$lat,$lng&destinations=$dest_lat,$dest_lng&key=$api_key';
+      http.get(url).then((res) {
+        Map<String, dynamic> resp = json.decode(res.body);
+        String status = resp['status'];
+        if (status != null && status == 'OK') {
+          Map<String, dynamic> result = resp['rows'][0];
+          Map<String, dynamic> element = result['elements'][0];
+          Map<String, dynamic> distance = element['distance'];
+          Map<String, dynamic> duration = element['duration'];
+          setState(() {
+            trip_distance = distance['text'];
+            trip_duration = duration['text'];
+          });
+        }
+      });
+    } catch (e) {
+      print('${e.toString()}');
     }
   }
 
@@ -252,6 +284,7 @@ class _DriverPage extends State<DriverPage> {
     });
     if (!isGeneralTripsLoaded) {
       getGeneralTrips();
+      getCurrentTripDetails();
     }
     // TODO: implement build
     return Scaffold(
@@ -289,7 +322,9 @@ class _DriverPage extends State<DriverPage> {
                                   ? buildSliderForTrips()
                                   : new Text('')
                               : new Text(''),
-                          driverHasAcceptedATrip(),
+                          (currentTripSnapshot != null)
+                              ? driverHasAcceptedATrip()
+                              : new Text(''),
                         ],
                       )),
                 ]))));
@@ -307,8 +342,10 @@ class _DriverPage extends State<DriverPage> {
   }
 
   Widget driverHasAcceptedATrip() {
+    Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
     return Container(
-        color: Color(MyColors().primary_color),
+        color: Colors.white,
         width: MediaQuery.of(context).size.width,
         alignment: Alignment.bottomCenter,
         height: 250.0,
@@ -328,17 +365,63 @@ class _DriverPage extends State<DriverPage> {
                         image: new DecorationImage(
                             fit: BoxFit.cover,
                             image: AssetImage('user_dp.png')))),
+                title: Text(
+                  fp.loc_name,
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  cts['rider_name'].toString(),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.w200),
+                ),
+                trailing: (cts['card_trip']
+                    ? Icon(
+                        Icons.monetization_on,
+                        color: Color(MyColors().primary_color),
+                      )
+                    : Icon(
+                        Icons.credit_card,
+                        color: Color(MyColors().primary_color),
+                      )),
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.call,
+                  color: Color(MyColors().primary_color),
+                ),
+                title: Text(
+                  'Call ${cts['rider_name'].toString()}',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w500),
+                ),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  color: Color(MyColors().primary_color),
+                ),
+                onTap: _callUser,
               ),
               new Container(
-                margin: EdgeInsets.only(left: 13.0, right: 13.0),
+                margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 20.0),
                 child: Padding(
                   padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
                   child: new RaisedButton(
                     child: new Text(button_title,
                         style: new TextStyle(
-                            fontSize: 18.0,
-                            color: Color(MyColors().button_text_color))),
-                    color: Color(MyColors().secondary_color),
+                            fontSize: 15.0,
+                            color: (button_index == 3)
+                                ? Colors.white
+                                : Color(MyColors().button_text_color),
+                            fontWeight: FontWeight.w300)),
+                    color: (button_index == 3)
+                        ? Colors.red
+                        : Color(MyColors().secondary_color),
                     disabledColor: Colors.grey,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(30.0)),
@@ -354,7 +437,133 @@ class _DriverPage extends State<DriverPage> {
             ]));
   }
 
-  void _performButtonOperation(int index) {}
+  void _callUser() {
+    Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    String url = 'tel:${cts['rider_number'].toString()}';
+    _launchURL(url);
+  }
+
+  Future<Null> _launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _performButtonOperation(int index) {
+    Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    DatabaseReference ctRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
+    DatabaseReference userRef = FirebaseDatabase.instance.reference().child(
+        'users/${cts['rider_email'].toString().replaceAll('.', ',')}/trips');
+    if (index == 0) {
+      userRef
+          .child(
+              'incoming/${currentTripSnapshot.value['id'].toString()}/status')
+          .update({'current_ride_status': 'driver assigned'}).whenComplete(() {
+        new Utils().sendNotification(
+            'GidiRide Driver',
+            'Your driver is coming to your pickup location. Open the app for more details.',
+            cts['rider_msgId'].toString());
+        setState(() {
+          dialogType = DialogType.driving;
+          button_title = 'I have arrived pickup location';
+          button_index = 1;
+        });
+        ctRef.update({'status': 'pickup driving', 'current_index': '1'});
+      });
+    }
+    if (index == 1) {
+      setState(() {
+        dialogType = DialogType.driving;
+        button_title = 'Start driving to drop-off';
+        button_index = 2;
+      });
+      ctRef.update({
+        'current_location_reached': DateTime.now().toString(),
+        'status': 'pickup arrived',
+        'current_index': '2'
+      }).whenComplete(() {
+        userRef
+            .child(
+                'incoming/${currentTripSnapshot.value['id'].toString()}/status')
+            .update({'current_ride_status': 'en-route'});
+      });
+    }
+    if (index == 2) {
+      setState(() {
+        dialogType = DialogType.driving;
+        button_title = 'End Trip';
+        button_index = 3;
+      });
+      ctRef.update({
+        'ride_started': DateTime.now().toString(),
+        'status': 'pickup arrived',
+        'current_index': '3'
+      });
+    }
+    if (index == 3) {
+      setState(() {
+        dialogType = DialogType.driving;
+        //button_title = 'End Trip';
+        //button_index = 4;
+      });
+      ctRef.update({
+        'ride_ended': DateTime.now().toString(),
+        'status': 'ride ended',
+        'current_index': '4'
+      });
+    }
+    if (index == 4) {
+      //open a new activity
+      userRef
+          .child(
+              'incoming/${currentTripSnapshot.value['id'].toString()}/status')
+          .update({'current_ride_status': 'review driver'});
+    }
+  }
+
+  Future<void> getCurrentTripDetails() async {
+    DatabaseReference ctRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
+    ctRef.onValue.listen((data) {
+      if (data.snapshot != null) {
+        setState(() {
+          currentTripSnapshot = data.snapshot;
+          button_index =
+              int.parse(data.snapshot.value['current_index'].toString());
+          if (button_index == 0) {
+            driver_has_accepted = true;
+            button_title = 'Go to pickup';
+          }
+          if (button_index == 1) {
+            driver_has_accepted = true;
+            dialogType = DialogType.driving;
+            button_title = 'I have arrived pickup location';
+          }
+          if (button_index == 2) {
+            driver_has_accepted = true;
+            dialogType = DialogType.driving;
+            driver_going_to_pickup = true;
+            button_title = 'Start driving to drop-off';
+          }
+          if (button_index == 3) {
+            driver_has_accepted = true;
+            dialogType = DialogType.driving;
+            driver_delivery_item = true;
+            button_title = 'End Trip';
+          }
+          if (button_index == 4) {
+            dialogType = DialogType.request;
+            //open activity to charge user
+          }
+        });
+      }
+    });
+  }
 
   List<Widget> carouselChildren() {
     List<Widget> mWidgets = new List();
@@ -497,10 +706,15 @@ class _DriverPage extends State<DriverPage> {
             {'current_ride_status': 'driver accepted'}).whenComplete(() {
           DatabaseReference driverRef = FirebaseDatabase.instance
               .reference()
-              .child('driver/${_email.replaceAll('.', ',')}/accepted_trip');
+              .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
           driverRef.set({
             'id': '${values['id'].toString()}',
             'status': 'awaiting pickup',
+            'current_index': '0',
+            'current_location_reached': '',
+            'ride_started': '',
+            'ride_ended': '',
+            'scheduled_reached': false,
             'trip_details': {
               'id': values['id'].toString(),
               'current_location': fp.toJSON(),
@@ -540,13 +754,27 @@ class _DriverPage extends State<DriverPage> {
             setState(() {
               driver_has_accepted = true;
             });
+            _prefs.then((pref) {
+              pref.setString('accepted_trip_id', values['id'].toString());
+            });
           });
         });
       });
     });
   }
 
-  void alertDriver() {}
+  Future<void> alertDriver() async {
+    String dEmail, id;
+    Future<SharedPreferences> _bgPrefs = SharedPreferences.getInstance();
+    _bgPrefs.then((pref) {
+      dEmail = pref.getString('email');
+      id = pref.getString('accepted_trip_id');
+    });
+    DatabaseReference updateDriverRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${dEmail.replaceAll('.', ',')}/accepted_trip');
+    await updateDriverRef.update({'scheduled_reached': true});
+  }
 
   Future<void> getGeneralTrips() async {
     DatabaseReference genRef =
