@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:gidi_ride_driver/Models/reviews.dart';
 import 'package:gidi_ride_driver/Models/user.dart';
 import 'package:gidi_ride_driver/Users/user_login.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
@@ -57,6 +58,7 @@ class _UserHomePage extends State<UserHomePage> {
   bool isStack = true;
   String _name = '', _email = '', _image = '';
   bool destination_entered = false;
+  double total_rating = 0.0;
 
   _getDrawerItemWidget(int pos) {
     switch (pos) {
@@ -107,7 +109,7 @@ class _UserHomePage extends State<UserHomePage> {
     checkBlock.onValue.listen((data) {
       bool userBlocked = data.snapshot.value['userBlocked'];
       bool userVerified = data.snapshot.value['userVerified'];
-      _prefs.then((p){
+      _prefs.then((p) {
         p.setBool('userVerified', userVerified);
       });
       if (userBlocked) {
@@ -172,6 +174,25 @@ class _UserHomePage extends State<UserHomePage> {
                                     ? AssetImage('user_dp.png')
                                     : NetworkImage(_image),
                               ))),
+                      otherAccountsPictures: <Widget>[
+                        new Row(
+                          children: <Widget>[
+                            new Icon(
+                              Icons.star,
+                              size: 18.0,
+                              color: Color(MyColors().secondary_color),
+                            ),
+                            new Text(
+                              '$total_rating',
+                              style: TextStyle(
+                                fontSize: 11.0,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
                     ),
                     new Column(children: drawerOptions),
                     new Container(
@@ -186,5 +207,22 @@ class _UserHomePage extends State<UserHomePage> {
               ]))),
       body: _getDrawerItemWidget(_selectedDrawerIndex),
     );
+  }
+
+  Future<void> getDriverReviews() async {
+    DatabaseReference driverRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}');
+    await driverRef.child('reviews').once().then((snapshot) {
+      if (snapshot.value != null) {
+        setState(() {
+          for (var value in snapshot.value.values) {
+            Reviews reviews = new Reviews.fromJson(value);
+            double rate_star = double.parse(reviews.rate_star);
+            total_rating = total_rating + rate_star;
+          }
+        });
+      }
+    });
   }
 }

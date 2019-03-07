@@ -345,7 +345,7 @@ class _DriverPage extends State<DriverPage> {
   }
 
   Widget driverHasAcceptedATrip() {
-    Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
     FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
     return Container(
         color: Colors.white,
@@ -441,7 +441,7 @@ class _DriverPage extends State<DriverPage> {
   }
 
   void _callUser() {
-    Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
     String url = 'tel:${cts['rider_number'].toString()}';
     _launchURL(url);
   }
@@ -455,7 +455,7 @@ class _DriverPage extends State<DriverPage> {
   }
 
   void _performButtonOperation(int index) {
-    Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
     DatabaseReference ctRef = FirebaseDatabase.instance
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
@@ -524,10 +524,6 @@ class _DriverPage extends State<DriverPage> {
       Route route = MaterialPageRoute(
           builder: (context) => TripEndedReview(currentTripSnapshot));
       Navigator.pushReplacement(context, route);
-//      userRef
-//          .child(
-//              'incoming/${currentTripSnapshot.value['id'].toString()}/status')
-//          .update({'current_ride_status': 'review driver'});
     }
   }
 
@@ -703,7 +699,7 @@ class _DriverPage extends State<DriverPage> {
     FavoritePlaces fp = FavoritePlaces.fromJson(values['current_location']);
     FavoritePlaces fp2 = FavoritePlaces.fromJson(values['destination']);
     PaymentMethods pm =
-        (!values['card_trip']) ? PaymentMethods.fromJson(values['']) : null;
+        (values['card_trip']) ? PaymentMethods.fromJson(values['payment_method']) : null;
     GeneralPromotions gp = GeneralPromotions.fromJson(values['promotions']);
     Fares fares = Fares.fromJson(values['fare']);
 
@@ -735,15 +731,16 @@ class _DriverPage extends State<DriverPage> {
               'destination': fp2.toJSON(),
               'trip_distance': values['trip_distance'],
               'trip_duration': values['trip_duration'],
-              'payment_method': (!values['card_trip']) ? pm.toJSON() : 'cash',
+              'payment_method': (values['card_trip']) ? pm.toJSON() : 'cash',
               'vehicle_type': values['vehicle_type'],
               'promotion': (gp != null) ? gp.toJSON() : 'no_promo',
-              'card_trip': (!values['card_trip']) ? true : false,
+              'card_trip': (values['card_trip']) ? true : false,
               'promo_used': (gp != null) ? true : false,
               'scheduled_date': values['scheduled_date'].toString(),
               'status': 'incoming',
               'created_date': values['created_date'].toString(),
               'price_range': values['price_range'].toString(),
+              'trip_total_price': values['trip_total_price'].toString(),
               'fare': fares.toJSON(),
               'assigned_driver': _email,
               'rider_email': values['rider_email'].toString(),
