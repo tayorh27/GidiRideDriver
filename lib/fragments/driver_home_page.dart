@@ -10,6 +10,7 @@ import 'package:gidi_ride_driver/Models/fares.dart';
 import 'package:gidi_ride_driver/Models/favorite_places.dart';
 import 'package:gidi_ride_driver/Models/general_promotion.dart';
 import 'package:gidi_ride_driver/Models/payment_method.dart';
+import 'package:gidi_ride_driver/Users/trip_ended_review.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -181,13 +182,15 @@ class _DriverPage extends State<DriverPage> {
         'latitude': '$lat',
         'longitude': '$lng'
       });
-      getDistanceDirection(lat, lng, destination.latitude, destination.longitude);
+      getDistanceDirection(
+          lat, lng, destination.latitude, destination.longitude);
       //add polyline
       //insert trip distance and duration also
     }
   }
 
-  Future<void> getDistanceDirection(double lat, double lng, String dest_lat, String dest_lng) async {
+  Future<void> getDistanceDirection(
+      double lat, double lng, String dest_lat, String dest_lng) async {
     try {
       String url =
           'https://maps.googleapis.com/maps/api/distancematrix/json?origins=$lat,$lng&destinations=$dest_lat,$dest_lng&key=$api_key';
@@ -518,10 +521,13 @@ class _DriverPage extends State<DriverPage> {
     }
     if (index == 4) {
       //open a new activity
-      userRef
-          .child(
-              'incoming/${currentTripSnapshot.value['id'].toString()}/status')
-          .update({'current_ride_status': 'review driver'});
+      Route route = MaterialPageRoute(
+          builder: (context) => TripEndedReview(currentTripSnapshot));
+      Navigator.pushReplacement(context, route);
+//      userRef
+//          .child(
+//              'incoming/${currentTripSnapshot.value['id'].toString()}/status')
+//          .update({'current_ride_status': 'review driver'});
     }
   }
 
@@ -559,6 +565,9 @@ class _DriverPage extends State<DriverPage> {
           if (button_index == 4) {
             dialogType = DialogType.request;
             //open activity to charge user
+            Route route = MaterialPageRoute(
+                builder: (context) => TripEndedReview(currentTripSnapshot));
+            Navigator.pushReplacement(context, route);
           }
         });
       }
@@ -650,6 +659,11 @@ class _DriverPage extends State<DriverPage> {
   }
 
   void _acceptTrip(dynamic values) {
+    if (!isDriverVerified) {
+      new Utils().neverSatisfied(context, 'Error',
+          'Sorry your account has not yet been verified. Contact support for more details.');
+      return;
+    }
     showDialog<Null>(
       context: context,
       barrierDismissible: true, // user must tap button!

@@ -104,8 +104,12 @@ class _UserHomePage extends State<UserHomePage> {
     DatabaseReference checkBlock = FirebaseDatabase.instance
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}/signup');
-    checkBlock.once().then((data) {
-      bool userBlocked = data.value['userBlocked'];
+    checkBlock.onValue.listen((data) {
+      bool userBlocked = data.snapshot.value['userBlocked'];
+      bool userVerified = data.snapshot.value['userVerified'];
+      _prefs.then((p){
+        p.setBool('userVerified', userVerified);
+      });
       if (userBlocked) {
         new Utils().neverSatisfied(context, 'User Blocked',
             'Sorry you have been blocked from this account. Please contact support for futher assistance.');
