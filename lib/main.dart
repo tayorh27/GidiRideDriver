@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:android_alarm_manager/android_alarm_manager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gidi_ride_driver/Users/home_user.dart';
@@ -10,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async{
   //MapView.setApiKey("AIzaSyDlMdDnOh3BQtZhF8gku4Xq1uFB-ZhLdig");
-  //await AndroidAlarmManager.initialize();
+  await AndroidAlarmManager.initialize();
   runApp(new MyApp());
 }
 

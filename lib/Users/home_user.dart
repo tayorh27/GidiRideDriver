@@ -163,7 +163,7 @@ class _UserHomePage extends State<UserHomePage> {
                     new UserAccountsDrawerHeader(
                       accountName: new Text((_name == null) ? '' : _name),
                       accountEmail: new Text((_email == null) ? '' : _email),
-                      currentAccountPicture: new Container(
+                      currentAccountPicture: Container(
                           width: 100.0,
                           height: 100.0,
                           decoration: new BoxDecoration(
@@ -175,23 +175,25 @@ class _UserHomePage extends State<UserHomePage> {
                                     : NetworkImage(_image),
                               ))),
                       otherAccountsPictures: <Widget>[
-                        new Row(
-                          children: <Widget>[
-                            new Icon(
-                              Icons.star,
-                              size: 18.0,
-                              color: Color(MyColors().secondary_color),
-                            ),
-                            new Text(
-                              '$total_rating',
-                              style: TextStyle(
-                                fontSize: 11.0,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        )
+                        Container(
+                            margin: EdgeInsets.all(0.0),
+                            child: new Row(
+                              children: <Widget>[
+                                new Icon(
+                                  Icons.star,
+                                  size: 18.0,
+                                  color: Color(MyColors().secondary_color),
+                                ),
+                                new Text(
+                                  '$total_rating',
+                                  style: TextStyle(
+                                    fontSize: 14.0,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ))
                       ],
                     ),
                     new Column(children: drawerOptions),

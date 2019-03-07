@@ -135,8 +135,7 @@ class _TripEndedReview extends State<TripEndedReview> {
     PaymentMethods pm = (ride_details['card_trip'])
         ? PaymentMethods.fromJson(ride_details['payment_method'])
         : null;
-    GeneralPromotions gp =
-        GeneralPromotions.fromJson(ride_details['promotions']);
+    GeneralPromotions gp = (ride_details['promo_used']) ? GeneralPromotions.fromJson(ride_details['promotions']) : null;
     Fares fares = Fares.fromJson(ride_details['fare']);
     setState(() {
       _inAsyncCall = true;

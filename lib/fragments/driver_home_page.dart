@@ -325,11 +325,11 @@ class _DriverPage extends State<DriverPage> {
                                   ? buildSliderForTrips()
                                   : new Text('')
                               : new Text(''),
-                          (currentTripSnapshot != null)
-                              ? driverHasAcceptedATrip()
-                              : new Text(''),
                         ],
                       )),
+                  (currentTripSnapshot != null)
+                      ? driverHasAcceptedATrip()
+                      : new Text(''),
                 ]))));
   }
 
@@ -351,9 +351,9 @@ class _DriverPage extends State<DriverPage> {
         color: Colors.white,
         width: MediaQuery.of(context).size.width,
         alignment: Alignment.bottomCenter,
-        height: 250.0,
+        height: 300.0,
         margin:
-            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 250.0)),
+            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 300.0)),
         child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -361,8 +361,8 @@ class _DriverPage extends State<DriverPage> {
             children: <Widget>[
               new ListTile(
                 leading: new Container(
-                    width: 100.0,
-                    height: 100.0,
+                    width: 60.0,
+                    height: 60.0,
                     decoration: new BoxDecoration(
                         shape: BoxShape.circle,
                         image: new DecorationImage(
@@ -371,26 +371,30 @@ class _DriverPage extends State<DriverPage> {
                 title: Text(
                   fp.loc_name,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Color(MyColors().primary_color),
                       fontSize: 16.0,
                       fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   cts['rider_name'].toString(),
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Color(MyColors().primary_color),
                       fontSize: 14.0,
-                      fontWeight: FontWeight.w200),
+                      fontWeight: FontWeight.w400),
                 ),
                 trailing: (cts['card_trip']
                     ? Icon(
-                        Icons.monetization_on,
-                        color: Color(MyColors().primary_color),
+                        Icons.credit_card,
+                        color: Color(MyColors().secondary_color),
                       )
                     : Icon(
-                        Icons.credit_card,
-                        color: Color(MyColors().primary_color),
+                        Icons.monetization_on,
+                        color: Color(MyColors().secondary_color),
                       )),
+              ),
+              Divider(
+                color: Color(MyColors().primary_color),
+                height: 1.0,
               ),
               ListTile(
                 leading: Icon(
@@ -400,7 +404,7 @@ class _DriverPage extends State<DriverPage> {
                 title: Text(
                   'Call ${cts['rider_name'].toString()}',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Color(MyColors().primary_color),
                       fontSize: 16.0,
                       fontWeight: FontWeight.w500),
                 ),
@@ -410,8 +414,12 @@ class _DriverPage extends State<DriverPage> {
                 ),
                 onTap: _callUser,
               ),
+              Divider(
+                color: Color(MyColors().primary_color),
+                height: 1.0,
+              ),
               new Container(
-                margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 20.0),
+                margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 10.0, bottom: 10.0),
                 child: Padding(
                   padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
                   child: new RaisedButton(
@@ -421,7 +429,7 @@ class _DriverPage extends State<DriverPage> {
                             color: (button_index == 3)
                                 ? Colors.white
                                 : Color(MyColors().button_text_color),
-                            fontWeight: FontWeight.w300)),
+                            fontWeight: FontWeight.w500)),
                     color: (button_index == 3)
                         ? Colors.red
                         : Color(MyColors().secondary_color),
@@ -532,7 +540,7 @@ class _DriverPage extends State<DriverPage> {
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
     ctRef.onValue.listen((data) {
-      if (data.snapshot != null) {
+      if (data.snapshot.value != null) {
         setState(() {
           currentTripSnapshot = data.snapshot;
           button_index =
@@ -595,7 +603,7 @@ class _DriverPage extends State<DriverPage> {
         child: Column(
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             new ListTile(
               title: new Text(
@@ -617,7 +625,7 @@ class _DriverPage extends State<DriverPage> {
                 style: TextStyle(color: Colors.white, fontSize: 16.0),
               ),
               subtitle: new Text(
-                '${months[scheduled_date.month]}.${scheduled_date.day}.${scheduled_date.year}',
+                '${months[(scheduled_date.month - 1)]}.${scheduled_date.day}.${scheduled_date.year}',
                 style: TextStyle(color: Colors.white, fontSize: 14.0),
               ),
               leading: Icon(
@@ -687,6 +695,7 @@ class _DriverPage extends State<DriverPage> {
               ),
               onPressed: () {
                 _tripAcceptedByDriver(values);
+                Navigator.of(context).pop();
               },
             ),
           ],
@@ -698,9 +707,12 @@ class _DriverPage extends State<DriverPage> {
   Future<void> _tripAcceptedByDriver(dynamic values) async {
     FavoritePlaces fp = FavoritePlaces.fromJson(values['current_location']);
     FavoritePlaces fp2 = FavoritePlaces.fromJson(values['destination']);
-    PaymentMethods pm =
-        (values['card_trip']) ? PaymentMethods.fromJson(values['payment_method']) : null;
-    GeneralPromotions gp = GeneralPromotions.fromJson(values['promotions']);
+    PaymentMethods pm = (values['card_trip'])
+        ? PaymentMethods.fromJson(values['payment_method'])
+        : null;
+    GeneralPromotions gp = (values['promo_used'])
+        ? GeneralPromotions.fromJson(values['promotions'])
+        : null;
     Fares fares = Fares.fromJson(values['fare']);
 
     DatabaseReference genRef = FirebaseDatabase.instance
@@ -758,10 +770,10 @@ class _DriverPage extends State<DriverPage> {
             DateTime future_date =
                 DateTime.parse(values['scheduled_date'].toString());
             DateTime now_date = DateTime.now();
-            int diff = future_date.difference(now_date).inMinutes;
+            int diff = future_date.difference(now_date).inSeconds;
             int helloAlarmID = 0;
             await AndroidAlarmManager.oneShot(
-                Duration(minutes: diff), helloAlarmID, alertDriver);
+                Duration(seconds: diff), helloAlarmID, alertDriver);
             setState(() {
               driver_has_accepted = true;
             });
