@@ -150,7 +150,7 @@ class _DriverPage extends State<DriverPage> {
       getMapLocation(lat, lng);
     }
     if (dialogType == DialogType.driving) {
-      Map<String, dynamic> cts = currentTripSnapshot.value['trip_details'];
+      Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
       FavoritePlaces destination = FavoritePlaces.fromJson(cts['destination']);
       mapController.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
