@@ -740,6 +740,7 @@ class _DriverPage extends State<DriverPage> {
               'status': 'incoming',
               'created_date': values['created_date'].toString(),
               'price_range': values['price_range'].toString(),
+              'trip_total_price': values['trip_total_price'].toString(),
               'fare': fares.toJSON(),
               'assigned_driver': _email,
               'rider_email': values['rider_email'].toString(),

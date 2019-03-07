@@ -13,6 +13,7 @@ class CurrentTrip {
       status,
       created_date,
       price_range,
+  trip_total_price,
       assigned_driver;
   FavoritePlaces current_location, destination;
   PaymentMethods payment_method;
@@ -40,6 +41,7 @@ class CurrentTrip {
     status = snapshot.value['status'];
     created_date = snapshot.value['created_date'];
     price_range = snapshot.value['price_range'];
+    trip_total_price = snapshot.value['trip_total_price'];
     fare = Fares.fromSnapshot(snapshot.value['fare']);
     assigned_driver = snapshot.value['assigned_driver'];
   }

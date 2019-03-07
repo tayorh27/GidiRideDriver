@@ -148,7 +148,10 @@ class _TripEndedReview extends State<TripEndedReview> {
         .child('drivers/${_email.replaceAll('.', ',')}');
     userRef
         .child('incoming/${widget.snapshot.value['id'].toString()}/status')
-        .update({'current_ride_status': 'review driver'}).whenComplete(() {
+        .update({
+      'current_ride_status': 'review driver',
+      'trip_total_price': calculateTotalPrice()
+    }).whenComplete(() {
       driverRef.child('accepted_trip').remove().whenComplete(() {
         DateTime dt = DateTime.now();
         String key = '${dt.day},${(dt.month + 1)},${dt.year}';
@@ -178,6 +181,7 @@ class _TripEndedReview extends State<TripEndedReview> {
             'status': 'incoming',
             'created_date': ride_details['created_date'].toString(),
             'price_range': ride_details['price_range'].toString(),
+            'trip_total_price': calculateTotalPrice(),
             'fare': fares.toJSON(),
             'assigned_driver': _email,
             'rider_email': ride_details['rider_email'].toString(),
@@ -185,7 +189,7 @@ class _TripEndedReview extends State<TripEndedReview> {
             'rider_number': ride_details['rider_number'].toString(),
             'rider_msgId': ride_details['rider_msgId'].toString()
           }
-        });
+        });//debit and if promo
       });
     });
   }
@@ -231,10 +235,11 @@ class _TripEndedReview extends State<TripEndedReview> {
       if (discount_type == 'percent') {
         double percent_discount = double.parse(gp.discount_value);
         double max_value = double.parse(gp.maximum_value);
-        double percent_off = ((over_all_total * percent_discount) / 100).ceilToDouble();
-        if(percent_off > max_value){
+        double percent_off =
+            ((over_all_total * percent_discount) / 100).ceilToDouble();
+        if (percent_off > max_value) {
           over_all_total = over_all_total - max_value;
-        }else{
+        } else {
           over_all_total = over_all_total - percent_off;
         }
       }
