@@ -62,6 +62,7 @@ dev_dependencies:
   flutter_datetime_picker: ^1.0.6
   #rapido: ^0.1.7
   screen: ^0.0.4
+  audioplayer: ^0.5.2
 
 
 # For information on the generic Dart part of this file, see the
@@ -96,6 +97,7 @@ flutter:
    - gidicar.png
    - gidibike.png
    - map_car.png
+   - assets/audio/rush.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.io/assets-and-images/#resolution-aware.

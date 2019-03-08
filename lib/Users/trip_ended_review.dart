@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
@@ -5,9 +7,13 @@ import 'package:gidi_ride_driver/Models/fares.dart';
 import 'package:gidi_ride_driver/Models/favorite_places.dart';
 import 'package:gidi_ride_driver/Models/general_promotion.dart';
 import 'package:gidi_ride_driver/Models/payment_method.dart';
+import 'package:gidi_ride_driver/Models/transaction.dart';
+import 'package:gidi_ride_driver/Users/home_user.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
+import 'package:gidi_ride_driver/Utility/Utils.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class TripEndedReview extends StatefulWidget {
   final DataSnapshot snapshot;
@@ -21,11 +27,14 @@ class TripEndedReview extends StatefulWidget {
 class _TripEndedReview extends State<TripEndedReview> {
   bool _inAsyncCall = false;
   Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-  String _email = '', _refCode = '', _promo_price = '', _get_back_promo_price;
+  String _email = '';
   bool isPromoUsed = false;
 
   var paystackPublicKey;
   var paystackSecretKey;
+
+  String total_trip_amount = '';
+  DatabaseReference driverEarnRef;
 
   @override
   void initState() {
@@ -53,6 +62,9 @@ class _TripEndedReview extends State<TripEndedReview> {
         _email = pref.getString('email');
       });
     });
+    driverEarnRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/total_earned');
     // TODO: implement build
     return Scaffold(
       backgroundColor: Color(MyColors().primary_color),
@@ -135,7 +147,9 @@ class _TripEndedReview extends State<TripEndedReview> {
     PaymentMethods pm = (ride_details['card_trip'])
         ? PaymentMethods.fromJson(ride_details['payment_method'])
         : null;
-    GeneralPromotions gp = (ride_details['promo_used']) ? GeneralPromotions.fromJson(ride_details['promotions']) : null;
+    GeneralPromotions gp = (ride_details['promo_used'])
+        ? GeneralPromotions.fromJson(ride_details['promotions'])
+        : null;
     Fares fares = Fares.fromJson(ride_details['fare']);
     setState(() {
       _inAsyncCall = true;
@@ -149,11 +163,11 @@ class _TripEndedReview extends State<TripEndedReview> {
         .child('incoming/${widget.snapshot.value['id'].toString()}/status')
         .update({
       'current_ride_status': 'review driver',
-      'trip_total_price': calculateTotalPrice()
-    }).whenComplete(() {
-      driverRef.child('accepted_trip').remove().whenComplete(() {
+      'trip_total_price': '₦$total_trip_amount'
+    }).then((comp) {
+      driverRef.child('accepted_trip').remove().then((comp) {
         DateTime dt = DateTime.now();
-        String key = '${dt.day},${(dt.month + 1)},${dt.year}';
+        String key = '${dt.day},${(dt.month)},${dt.year}';
         driverRef.child('trips/$key').push().set({
           'id': '${widget.snapshot.value['id'].toString()}',
           'status': '${widget.snapshot.value['status'].toString()}',
@@ -180,7 +194,7 @@ class _TripEndedReview extends State<TripEndedReview> {
             'status': 'incoming',
             'created_date': ride_details['created_date'].toString(),
             'price_range': ride_details['price_range'].toString(),
-            'trip_total_price': calculateTotalPrice(),
+            'trip_total_price': '₦$total_trip_amount',
             'fare': fares.toJSON(),
             'assigned_driver': _email,
             'rider_email': ride_details['rider_email'].toString(),
@@ -188,8 +202,117 @@ class _TripEndedReview extends State<TripEndedReview> {
             'rider_number': ride_details['rider_number'].toString(),
             'rider_msgId': ride_details['rider_msgId'].toString()
           }
-        });//debit and if promo
+        }).then((comp) {
+          if (ride_details['card_trip']) {
+            deductMoneyFromUser();
+          } else {
+            saveToTransactions("CASH_TRIP", true);
+          }
+        }); //debit and if promo and total earn
       });
+    });
+  }
+
+  Future<void> saveToTransactions(String ref, bool success) async {
+    Map<dynamic, dynamic> ride_details = widget.snapshot.value['trip_details'];
+    PaymentMethods pm = (ride_details['card_trip'])
+        ? PaymentMethods.fromJson(ride_details['payment_method'])
+        : null;
+    String id = ride_details['id'].toString();
+    DatabaseReference transRef =
+        FirebaseDatabase.instance.reference().child('transactions/$id');
+    GidiTransaction transaction = GidiTransaction(
+        id,
+        total_trip_amount,
+        ref,
+        new DateTime.now().toString(),
+        (ride_details['card_trip']) ? '${pm.payment_code}' : 'CASH',
+        (ride_details['card_trip']) ? 'CARD' : 'CASH',
+        _email,
+        ride_details['rider_email'].toString(),
+        success);
+    transRef.set(transaction.toJSON()).then((c) {
+      if (!success) {
+        DatabaseReference userRef3 = FirebaseDatabase.instance.reference().child(
+            'users/${ride_details['rider_email'].toString().replaceAll('.', ',')}/payments/${pm.payment_code}');
+        userRef3.update({'available': false});
+      }
+      updateTotalEarned();
+      if (isPromoUsed) {
+        _promoUsed();
+      } else {
+        setState(() {
+          _inAsyncCall = false;
+        });
+        new Utils().showToast('Thank you for choosing GidiRide', false);
+        Route route = MaterialPageRoute(builder: (context) => UserHomePage());
+        Navigator.pushReplacement(context, route);
+      }
+    });
+  }
+
+  void updateTotalEarned() {
+    driverEarnRef.once().then((snap) {
+      double initial_amount = 0;
+      if (snap.value != null) {
+        initial_amount = double.parse(snap.value.toString());
+      }
+      double update_amount = initial_amount + double.parse(total_trip_amount);
+      driverEarnRef.set(update_amount);
+    });
+  }
+
+  void _promoUsed() {
+    Map<dynamic, dynamic> ride_details = widget.snapshot.value['trip_details'];
+    GeneralPromotions gp = (ride_details['promo_used'])
+        ? GeneralPromotions.fromJson(ride_details['promotions'])
+        : null;
+    if (gp != null) {
+      //check user end if user uses promotion
+      int number_of_rides_used = int.parse(gp.number_of_rides_used);
+      String promo_code = gp.promo_code;
+      DatabaseReference userRef2 = FirebaseDatabase.instance.reference().child(
+          'users/${ride_details['rider_email'].toString().replaceAll('.', ',')}/promotions/$promo_code');
+      if (number_of_rides_used == 1) {
+        userRef2.remove();
+      }
+      if (number_of_rides_used > 1) {
+        userRef2
+            .update({'number_of_rides_used': '${(number_of_rides_used - 1)}'});
+      }
+    }
+
+    setState(() {
+      _inAsyncCall = false;
+    });
+    new Utils().showToast('Thank you for choosing GidiRide', false);
+    Route route = MaterialPageRoute(builder: (context) => UserHomePage());
+    Navigator.pushReplacement(context, route);
+  }
+
+  Future<void> deductMoneyFromUser() async {
+    Map<dynamic, dynamic> ride_details = widget.snapshot.value['trip_details'];
+    PaymentMethods pm = PaymentMethods.fromJson(ride_details['payment_method']);
+    await http.post('https://api.paystack.co/transaction/charge_authorization',
+        headers: {
+          'Authorization': 'Bearer $paystackSecretKey',
+          'Content-Type': 'application/json'
+        },
+        body: {
+          'authorization_code': pm.payment_code,
+          'email': ride_details['rider_email'].toString(),
+          'amount': '${total_trip_amount}00'
+        }).then((c) {
+      Map<String, dynamic> res = json.decode(c.body);
+      bool status = res['status'];
+      Map<String, dynamic> data = res['data'];
+      String data_status = data['status'];
+      String ref = data['reference'];
+      if (status && data_status == 'success') {
+        saveToTransactions(ref, true);
+      } else {
+        saveToTransactions(ref, false);
+      }
     });
   }
 
@@ -243,6 +366,7 @@ class _TripEndedReview extends State<TripEndedReview> {
         }
       }
     }
+    total_trip_amount = '${over_all_total.ceil()}';
     return '₦${over_all_total.roundToDouble()}';
   }
 }

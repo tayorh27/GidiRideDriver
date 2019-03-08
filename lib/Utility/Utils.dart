@@ -26,13 +26,16 @@ class Utils {
 
     final headers = {
       'content-type': 'application/json',
-      'Authorization': 'key=AAAAb5Awy-A:APA91bFJ__L2edL1qeuLLZIcZivz72i_5IMfbCK7t2c8MuEdc0DJVoLVTQdBnjAkXXUAmMZagoXoFAGJJn92R6B_2_y0gSxmIVBgitVHARqeJfQW8gNFWVmNfFb1niNEEShzQvIru1On'
+      'Authorization':
+          'key=AAAAb5Awy-A:APA91bFJ__L2edL1qeuLLZIcZivz72i_5IMfbCK7t2c8MuEdc0DJVoLVTQdBnjAkXXUAmMZagoXoFAGJJn92R6B_2_y0gSxmIVBgitVHARqeJfQW8gNFWVmNfFb1niNEEShzQvIru1On'
     };
 
     final response = await http.post(postUrl,
         body: json.encode(data),
         encoding: Encoding.getByName('utf-8'),
         headers: headers);
+
+    print('SendNotification: ${response.body}');
 
     if (response.statusCode == 200) {
       // on success do sth

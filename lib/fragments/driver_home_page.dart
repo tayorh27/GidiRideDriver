@@ -10,6 +10,7 @@ import 'package:gidi_ride_driver/Models/fares.dart';
 import 'package:gidi_ride_driver/Models/favorite_places.dart';
 import 'package:gidi_ride_driver/Models/general_promotion.dart';
 import 'package:gidi_ride_driver/Models/payment_method.dart';
+import 'package:gidi_ride_driver/Models/route.dart';
 import 'package:gidi_ride_driver/Users/trip_ended_review.dart';
 import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:gidi_ride_driver/Utility/Utils.dart';
@@ -22,6 +23,7 @@ import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:audioplayer/audioplayer.dart';
 //import 'package:map_view/map_view.dart';
 
 class DriverPage extends StatefulWidget {
@@ -46,6 +48,7 @@ class _DriverPage extends State<DriverPage> {
   Map<String, double> _currentLocation;
 
   StreamSubscription<Map<String, double>> _locationSubscription;
+  LatLng drivers_location;
 
   loc.Location _location = new loc.Location();
   bool _permission = false;
@@ -64,6 +67,7 @@ class _DriverPage extends State<DriverPage> {
   GoogleMapController mapController;
   int _polylineCount = 0;
   Polyline _selectedPolyline;
+  AudioPlayer audioPlugin = new AudioPlayer();
 
   //Completer<GoogleMapController> _controller = Completer();
   //var _mapView = new MapView();
@@ -90,6 +94,7 @@ class _DriverPage extends State<DriverPage> {
 //  String promotion_type = '';
 //  double request_progress = null;
   String trip_distance = '0 km', trip_duration = '0 min';
+  String total_amount_earned = '₦0.00';
 
 //  int trip_calculation;
 //  Fares car_fares = null;
@@ -122,6 +127,7 @@ class _DriverPage extends State<DriverPage> {
       double lat = result["latitude"];
       double lng = result["longitude"];
       setState(() {
+        drivers_location = LatLng(lat, lng);
         if (mapController != null) {
           updateMapCamera(lat, lng);
         }
@@ -184,8 +190,6 @@ class _DriverPage extends State<DriverPage> {
       });
       getDistanceDirection(
           lat, lng, destination.latitude, destination.longitude);
-      //add polyline
-      //insert trip distance and duration also
     }
   }
 
@@ -288,6 +292,7 @@ class _DriverPage extends State<DriverPage> {
     if (!isGeneralTripsLoaded) {
       getGeneralTrips();
       getCurrentTripDetails();
+      getDriverTotalEarned();
     }
     // TODO: implement build
     return Scaffold(
@@ -314,6 +319,38 @@ class _DriverPage extends State<DriverPage> {
                     tiltGesturesEnabled: true,
                     zoomGesturesEnabled: true,
                     myLocationButtonEnabled: true,
+                  ),
+                  Container(
+                    height: 50.0,
+                    width: 200.0,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.rectangle,
+                        color: Color(MyColors().primary_color),
+                        border: Border(
+                            top: BorderSide(
+                                color: Color(MyColors().secondary_color),
+                                width: 2.0),
+                            left: BorderSide(
+                                color: Color(MyColors().secondary_color),
+                                width: 2.0),
+                            right: BorderSide(
+                                color: Color(MyColors().secondary_color),
+                                width: 2.0),
+                            bottom: BorderSide(
+                                color: Color(MyColors().secondary_color),
+                                width: 2.0)),
+                        borderRadius: BorderRadius.all(Radius.circular(20.0))),
+                    child: Center(
+                      child: Text(
+                        total_amount_earned,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30.0,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ),
                   new Container(
                       margin:
@@ -351,13 +388,13 @@ class _DriverPage extends State<DriverPage> {
         color: Colors.white,
         width: MediaQuery.of(context).size.width,
         alignment: Alignment.bottomCenter,
-        height: 300.0,
+        height: 400.0,
         margin:
-            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 300.0)),
+            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 400.0)),
         child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
               new ListTile(
                 leading: new Container(
@@ -372,7 +409,7 @@ class _DriverPage extends State<DriverPage> {
                   fp.loc_name,
                   style: TextStyle(
                       color: Color(MyColors().primary_color),
-                      fontSize: 16.0,
+                      fontSize: 18.0,
                       fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
@@ -418,12 +455,29 @@ class _DriverPage extends State<DriverPage> {
                 color: Color(MyColors().primary_color),
                 height: 1.0,
               ),
+              Container(
+                margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 5.0),
+                child: (dialogType == DialogType.driving)
+                    ? Text(
+                        '${trip_duration} mins',
+                        style: TextStyle(
+                            color: Color(MyColors().primary_color),
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.w500),
+                      )
+                    : new Text(''),
+              ),
+              Divider(
+                color: Color(MyColors().primary_color),
+                height: 1.0,
+              ),
               new Container(
-                margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 10.0, bottom: 10.0),
+                margin: EdgeInsets.only(
+                    left: 13.0, right: 13.0, top: 10.0, bottom: 10.0),
                 child: Padding(
                   padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
                   child: new RaisedButton(
-                    child: new Text(button_title,
+                    child: new Text(button_title.toUpperCase(),
                         style: new TextStyle(
                             fontSize: 15.0,
                             color: (button_index == 3)
@@ -464,6 +518,9 @@ class _DriverPage extends State<DriverPage> {
 
   void _performButtonOperation(int index) {
     Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
+    FavoritePlaces currentLoc =
+        FavoritePlaces.fromJson(cts['current_location']);
+    FavoritePlaces destinationLoc = FavoritePlaces.fromJson(cts['destination']);
     DatabaseReference ctRef = FirebaseDatabase.instance
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
@@ -473,7 +530,7 @@ class _DriverPage extends State<DriverPage> {
       userRef
           .child(
               'incoming/${currentTripSnapshot.value['id'].toString()}/status')
-          .update({'current_ride_status': 'driver assigned'}).whenComplete(() {
+          .update({'current_ride_status': 'driver assigned'}).then((comp) {
         new Utils().sendNotification(
             'GidiRide Driver',
             'Your driver is coming to your pickup location. Open the app for more details.',
@@ -484,6 +541,10 @@ class _DriverPage extends State<DriverPage> {
           button_index = 1;
         });
         ctRef.update({'status': 'pickup driving', 'current_index': '1'});
+        addPolyLineToMap(
+            drivers_location,
+            LatLng(double.parse(currentLoc.latitude),
+                double.parse(currentLoc.longitude)));
       });
     }
     if (index == 1) {
@@ -496,12 +557,16 @@ class _DriverPage extends State<DriverPage> {
         'current_location_reached': DateTime.now().toString(),
         'status': 'pickup arrived',
         'current_index': '2'
-      }).whenComplete(() {
+      }).then((comp) {
         userRef
             .child(
                 'incoming/${currentTripSnapshot.value['id'].toString()}/status')
             .update({'current_ride_status': 'en-route'});
       });
+      addPolyLineToMap(
+          drivers_location,
+          LatLng(double.parse(destinationLoc.latitude),
+              double.parse(destinationLoc.longitude)));
     }
     if (index == 2) {
       setState(() {
@@ -543,6 +608,11 @@ class _DriverPage extends State<DriverPage> {
       if (data.snapshot.value != null) {
         setState(() {
           currentTripSnapshot = data.snapshot;
+          Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
+          FavoritePlaces currentLoc =
+              FavoritePlaces.fromJson(cts['current_location']);
+          FavoritePlaces destinationLoc =
+              FavoritePlaces.fromJson(cts['destination']);
           button_index =
               int.parse(data.snapshot.value['current_index'].toString());
           if (button_index == 0) {
@@ -553,12 +623,20 @@ class _DriverPage extends State<DriverPage> {
             driver_has_accepted = true;
             dialogType = DialogType.driving;
             button_title = 'I have arrived pickup location';
+            addPolyLineToMap(
+                drivers_location,
+                LatLng(double.parse(currentLoc.latitude),
+                    double.parse(currentLoc.longitude)));
           }
           if (button_index == 2) {
             driver_has_accepted = true;
             dialogType = DialogType.driving;
             driver_going_to_pickup = true;
             button_title = 'Start driving to drop-off';
+            addPolyLineToMap(
+                drivers_location,
+                LatLng(double.parse(destinationLoc.latitude),
+                    double.parse(destinationLoc.longitude)));
           }
           if (button_index == 3) {
             driver_has_accepted = true;
@@ -576,6 +654,71 @@ class _DriverPage extends State<DriverPage> {
         });
       }
     });
+  }
+
+  Future<void> addPolyLineToMap(LatLng start, LatLng end) async {
+    List<MyRoute> mRoutes = new List();
+    String url =
+        'https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${end.latitude},${end.longitude}&key=$api_key';
+    http.get(url).then((res) {
+      Map<String, dynamic> resp = json.decode(res.body);
+      List<Map<dynamic, dynamic>> routes = resp['routes'];
+      for (int i = 0; i < routes.length; i++) {
+        MyRoute route = new MyRoute();
+        Map<String, dynamic> jsonRoute = routes[i];
+        Map<String, dynamic> overview_polylineJson =
+            jsonRoute['overview_polyline'];
+        route.points =
+            decodePolyLine(overview_polylineJson['points'].toString());
+        mRoutes.add(route);
+      }
+      for (MyRoute myR in mRoutes) {
+        PolylineOptions polylineOptions = new PolylineOptions(
+            geodesic: true, color: 0xFF12161E, width: 20.0, visible: true);
+
+        for (int i = 0; i < myR.points.length; i++) {
+          polylineOptions.points.add(myR.points[i]);
+        }
+
+        mapController.addPolyline(polylineOptions);
+      }
+    });
+  }
+
+  List<LatLng> decodePolyLine(final String poly) {
+    int len = poly.length;
+    int index = 0;
+    List<LatLng> decoded = new List<LatLng>();
+    int lat = 0;
+    int lng = 0;
+
+    while (index < len) {
+      int b;
+      int shift = 0;
+      int result = 0;
+      do {
+        b = poly.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = poly.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      decoded.add(new LatLng(
+          (lat / double.parse('100000')), (lng / double.parse('100000'))));
+    }
+
+    return decoded;
   }
 
   List<Widget> carouselChildren() {
@@ -718,14 +861,15 @@ class _DriverPage extends State<DriverPage> {
     DatabaseReference genRef = FirebaseDatabase.instance
         .reference()
         .child('general_trips/${values['id'].toString()}');
-    await genRef.update({'assigned_driver': _email}).whenComplete(() {
+    await genRef.update({'assigned_driver': _email}).then((comp) {
       DatabaseReference userRef = FirebaseDatabase.instance.reference().child(
           'users/${values['rider_email'].toString().replaceAll('.', ',')}/trips');
       userRef
           .child('incoming/${values['id'].toString()}')
-          .update({'assigned_driver': _email}).whenComplete(() {
-        userRef.child('status').update(
-            {'current_ride_status': 'driver accepted'}).whenComplete(() {
+          .update({'assigned_driver': _email}).then((comp) {
+        userRef
+            .child('status')
+            .update({'current_ride_status': 'driver accepted'}).then((comp) {
           DatabaseReference driverRef = FirebaseDatabase.instance
               .reference()
               .child('drivers/${_email.replaceAll('.', ',')}/accepted_trip');
@@ -760,7 +904,7 @@ class _DriverPage extends State<DriverPage> {
               'rider_number': values['rider_number'].toString(),
               'rider_msgId': values['rider_msgId'].toString()
             }
-          }).whenComplete(() async {
+          }).then((comp) async {
             //send notification to user saying a driver has accepted your trip
             //also schedule the time
             new Utils().sendNotification(
@@ -814,6 +958,7 @@ class _DriverPage extends State<DriverPage> {
             setState(() {
               _snapshots.add(vals);
             });
+            playNotification();
           }
         });
       }
@@ -821,5 +966,22 @@ class _DriverPage extends State<DriverPage> {
         isGeneralTripsLoaded = true;
       });
     });
+  }
+
+  void getDriverTotalEarned() {
+    DatabaseReference driverEarnRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/total_earned');
+    driverEarnRef.onValue.listen((ev) {
+      if (ev.snapshot.value != null) {
+        setState(() {
+          total_amount_earned = '₦${ev.snapshot.value.toString()}.00';
+        });
+      }
+    });
+  }
+
+  Future<void> playNotification() async {
+    await audioPlugin.play('assets/audio/rush.mp3', isLocal: true);
   }
 }

@@ -35,16 +35,19 @@ class _TripInfo extends State<TripInfo> {
     if (!mounted) return;
   }
 
+  Map<dynamic, dynamic> cts;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    cts = widget.snapshot.value['trip_details'];
     initZendesk();
   }
 
   @override
   Widget build(BuildContext context) {
-    getDriverInfo();
+    //getDriverInfo();
     // TODO: implement build
     return Scaffold(
       backgroundColor: Color(MyColors().primary_color),
@@ -101,21 +104,21 @@ class _TripInfo extends State<TripInfo> {
               child: new ListTile(
                 leading: CircleAvatar(
                   radius: 30.0,
-                  child: Image.network(
-                    driver_image,
+                  child: Image.asset(
+                    'user_dp.png',
                     height: 60.0,
                     width: 60.0,
                   ),
                 ),
                 title: new Text(
-                  'Your trip with $driver_name',
+                  'Your trip with ${cts['rider_name'].toString()}',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 16.0,
                       fontWeight: FontWeight.w500),
                 ),
                 subtitle: new Text(
-                  widget.snapshot.value['scheduled_date'].toString(),
+                  cts['scheduled_date'].toString(),
                   style: TextStyle(color: Colors.white, fontSize: 13.0),
                 ),
               ),
@@ -129,7 +132,7 @@ class _TripInfo extends State<TripInfo> {
               ),
             ),
             new ListTile(
-              leading: (widget.snapshot.value['card_trip'])
+              leading: (cts['card_trip'])
                   ? Icon(
                       Icons.credit_card,
                       color: Color(MyColors().secondary_color),
@@ -139,7 +142,7 @@ class _TripInfo extends State<TripInfo> {
                       color: Color(MyColors().secondary_color),
                     ),
               title: Text(
-                (widget.snapshot.value['card_trip'])
+                (cts['card_trip'])
                     ? '•••• ${getPaymentMethodNumber()}'
                     : 'Cash',
                 style: TextStyle(
@@ -186,10 +189,10 @@ class _TripInfo extends State<TripInfo> {
   String getLocation(String type) {
     FavoritePlaces fp;
     if (type == 'start') {
-      fp = FavoritePlaces.fromJson(widget.snapshot.value['current_location']);
+      fp = FavoritePlaces.fromJson(cts['current_location']);
       return fp.loc_name;
     } else {
-      fp = FavoritePlaces.fromJson(widget.snapshot.value['destination']);
+      fp = FavoritePlaces.fromJson(cts['destination']);
       return fp.loc_name;
     }
   }
@@ -201,21 +204,19 @@ class _TripInfo extends State<TripInfo> {
   }
 
   String buildMapStaticUrl() {
-    FavoritePlaces fp_start =
-        FavoritePlaces.fromJson(widget.snapshot.value['current_location']);
-    FavoritePlaces fp_end =
-        FavoritePlaces.fromJson(widget.snapshot.value['destination']);
+    FavoritePlaces fp_start = FavoritePlaces.fromJson(cts['current_location']);
+    FavoritePlaces fp_end = FavoritePlaces.fromJson(cts['destination']);
     return 'https://maps.googleapis.com/maps/api/staticmap?center=${fp_start.latitude},${fp_start.longitude}&zoom=15&size=300x150&markers=size:tiny%7Ccolor:green%7C${fp_start.latitude},${fp_start.longitude}&markers=size:tiny%7Ccolor:red%7C${fp_end.latitude},${fp_end.longitude}&key=$api_key';
   }
 
-  Future<void> getDriverInfo() async {
-    DatabaseReference driverRef = FirebaseDatabase.instance.reference().child(
-        'drivers/${widget.snapshot.value['assigned_driver'].toString().replaceAll('.', ',')}/signup');
-    await driverRef.once().then((snapshot) {
-      setState(() {
-        driver_image = snapshot.value[''];
-        driver_name = snapshot.value[''];
-      });
-    });
-  }
+//  Future<void> getDriverInfo() async {
+//    DatabaseReference driverRef = FirebaseDatabase.instance.reference().child(
+//        'drivers/${widget.snapshot.value['assigned_driver'].toString().replaceAll('.', ',')}/signup');
+//    await driverRef.once().then((snapshot) {
+//      setState(() {
+//        driver_image = snapshot.value[''];
+//        driver_name = snapshot.value[''];
+//      });
+//    });
+//  }
 }
