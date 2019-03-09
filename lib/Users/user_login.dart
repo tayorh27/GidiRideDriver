@@ -498,7 +498,7 @@ class _UserLogin extends State<UserLogin> {
     }
   }
 
-  void getUserFromDatabase() {
+  void getUserFromDatabase(){
     try {
       DatabaseReference getUser = FirebaseDatabase.instance
           .reference()
@@ -512,6 +512,7 @@ class _UserLogin extends State<UserLogin> {
             setState(() {
               _inAsyncCall = false;
             });
+            FirebaseAuth.instance.signOut();
             new Utils().neverSatisfied(context, 'Error',
                 'Sorry you have been blocked. Please contact support.');
             return;
@@ -526,6 +527,10 @@ class _UserLogin extends State<UserLogin> {
               resendCodeFunction(); //////////////////////////////////////////////////l
             });
             return;
+          }
+          if(msgId.isNotEmpty){
+            gUser.msgId = msgId;
+            getUser.update({'msgId':msgId});
           }
           utils.saveUserInfo(gUser);
           setState(() {
@@ -542,6 +547,7 @@ class _UserLogin extends State<UserLogin> {
             _inAsyncCall = false;
           });
           new Utils().neverSatisfied(context, 'Error', 'User does not exist.');
+          FirebaseAuth.instance.signOut();
         }
       });
     } catch (e) {

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:android_alarm_manager/android_alarm_manager.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+
+//import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_swiper/flutter_swiper.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -95,6 +97,7 @@ class _DriverPage extends State<DriverPage> {
 //  double request_progress = null;
   String trip_distance = '0 km', trip_duration = '0 min';
   String total_amount_earned = '₦0.00';
+  bool getTripDetailsIsCalled = false;
 
 //  int trip_calculation;
 //  Fares car_fares = null;
@@ -158,27 +161,43 @@ class _DriverPage extends State<DriverPage> {
     if (dialogType == DialogType.driving) {
       Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
       FavoritePlaces destination = FavoritePlaces.fromJson(cts['destination']);
+      FavoritePlaces current_location =
+          FavoritePlaces.fromJson(cts['current_location']);
       mapController.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
           bearing: 90.0,
           target: LatLng(lat, lng),
           tilt: 30.0,
-          zoom: 20.0,
+          zoom: 15.0,
         ),
       ));
       mapController.addMarker(MarkerOptions(
           position: LatLng(lat, lng),
           alpha: 1.0,
           draggable: false,
-          icon: BitmapDescriptor.fromAsset('map_car.png'),
+          icon: BitmapDescriptor.fromAsset('assets/map_car.png'),
+
+          ///check here
           infoWindowText: InfoWindowText('Your location', '')));
-      mapController.addMarker(MarkerOptions(
-          position: LatLng(double.parse(destination.latitude),
-              double.parse(destination.longitude)),
-          alpha: 1.0,
-          draggable: false,
-          icon: BitmapDescriptor.defaultMarker,
-          infoWindowText: InfoWindowText('Your location', '')));
+      if (button_index == 2) {
+        mapController.addMarker(MarkerOptions(
+            position: LatLng(double.parse(destination.latitude),
+                double.parse(destination.longitude)),
+            alpha: 1.0,
+            draggable: false,
+            icon: BitmapDescriptor.defaultMarker,
+            infoWindowText: InfoWindowText('${destination.loc_name}', '')));
+      }
+      if (button_index == 1) {
+        mapController.addMarker(MarkerOptions(
+            position: LatLng(double.parse(current_location.latitude),
+                double.parse(current_location.longitude)),
+            alpha: 1.0,
+            draggable: false,
+            icon: BitmapDescriptor.defaultMarker,
+            infoWindowText:
+                InfoWindowText('${current_location.loc_name}', '')));
+      }
       locationRef = FirebaseDatabase.instance
           .reference()
           .child('drivers/${_email.replaceAll('.', ',')}/location');
@@ -188,8 +207,14 @@ class _DriverPage extends State<DriverPage> {
         'latitude': '$lat',
         'longitude': '$lng'
       });
-      getDistanceDirection(
-          lat, lng, destination.latitude, destination.longitude);
+      if (button_index == 2) {
+        getDistanceDirection(
+            lat, lng, destination.latitude, destination.longitude);
+      }
+      if (button_index == 1) {
+        getDistanceDirection(
+            lat, lng, current_location.latitude, current_location.longitude);
+      }
     }
   }
 
@@ -217,7 +242,7 @@ class _DriverPage extends State<DriverPage> {
     }
   }
 
-  Future<void> getMapLocation(double lat, double lng) async {
+  void getMapLocation(double lat, double lng) {
     locationRef = FirebaseDatabase.instance
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}/location');
@@ -229,7 +254,7 @@ class _DriverPage extends State<DriverPage> {
     });
     String url =
         'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$api_key';
-    await http.get(url).then((res) async {
+    http.get(url).then((res) async {
       //new Utils().neverSatisfied(context, 'msg', res.body);
       Map<String, dynamic> resp = json.decode(res.body);
       String status = resp['status'];
@@ -289,10 +314,10 @@ class _DriverPage extends State<DriverPage> {
         isDriverVerified = pref.getBool('userVerified');
       });
     });
-    if (!isGeneralTripsLoaded) {
-      getGeneralTrips();
+    getGeneralTrips();
+    getDriverTotalEarned();
+    if (!getTripDetailsIsCalled) {
       getCurrentTripDetails();
-      getDriverTotalEarned();
     }
     // TODO: implement build
     return Scaffold(
@@ -320,43 +345,12 @@ class _DriverPage extends State<DriverPage> {
                     zoomGesturesEnabled: true,
                     myLocationButtonEnabled: true,
                   ),
-                  Container(
-                    height: 50.0,
-                    width: 200.0,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        shape: BoxShape.rectangle,
-                        color: Color(MyColors().primary_color),
-                        border: Border(
-                            top: BorderSide(
-                                color: Color(MyColors().secondary_color),
-                                width: 2.0),
-                            left: BorderSide(
-                                color: Color(MyColors().secondary_color),
-                                width: 2.0),
-                            right: BorderSide(
-                                color: Color(MyColors().secondary_color),
-                                width: 2.0),
-                            bottom: BorderSide(
-                                color: Color(MyColors().secondary_color),
-                                width: 2.0)),
-                        borderRadius: BorderRadius.all(Radius.circular(20.0))),
-                    child: Center(
-                      child: Text(
-                        total_amount_earned,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 30.0,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
                   new Container(
                       margin:
-                          EdgeInsets.only(top: 60.0, left: 13.0, right: 13.0),
+                          EdgeInsets.only(top: 20.0, left: 13.0, right: 13.0),
                       child: new Column(
                         children: <Widget>[
+                          (!driver_has_accepted) ? buildEarned() : Text(''),
                           (!driver_has_accepted)
                               ? (_snapshots.length > 0)
                                   ? buildSliderForTrips()
@@ -370,27 +364,78 @@ class _DriverPage extends State<DriverPage> {
                 ]))));
   }
 
+  Widget buildEarned() {
+    return Container(
+        width: MediaQuery.of(context).size.width,
+        margin: EdgeInsets.only(bottom: 10.0),
+        child: Center(
+            child: Container(
+          height: 50.0,
+          width: 200.0,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              shape: BoxShape.rectangle,
+              color: Color(MyColors().primary_color),
+              border: Border(
+                  top: BorderSide(
+                      color: Color(MyColors().secondary_color), width: 2.0),
+                  left: BorderSide(
+                      color: Color(MyColors().secondary_color), width: 2.0),
+                  right: BorderSide(
+                      color: Color(MyColors().secondary_color), width: 2.0),
+                  bottom: BorderSide(
+                      color: Color(MyColors().secondary_color), width: 2.0)),
+              borderRadius: BorderRadius.all(Radius.circular(20.0))),
+          child: Center(
+            child: Text(
+              total_amount_earned,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 30.0,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        )));
+  }
+
   Widget buildSliderForTrips() {
     return new SizedBox(
         height: 220.0,
-        child: CarouselSlider(
-          height: 220.0,
-          autoPlay: false,
-          enlargeCenterPage: true,
-          items: carouselChildren(),
-        ));
+        child: new Swiper(
+          itemCount: _snapshots.length,
+          autoplay: false,
+          loop: false,
+          itemBuilder: (BuildContext context, int index) {
+            return new Column(children: carouselChildren());
+          },
+          scrollDirection: Axis.horizontal,
+          viewportFraction: 0.8,
+          scale: 0.9,
+          pagination: new SwiperPagination(),
+          control: new SwiperControl(),
+        )
+
+//        CarouselSlider(
+//          height: 220.0,
+//          autoPlay: false,
+//          enlargeCenterPage: true,
+//          items: carouselChildren(),
+//        )
+        );
   }
 
   Widget driverHasAcceptedATrip() {
     Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
     FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
+    FavoritePlaces fp2 = FavoritePlaces.fromJson(cts['destination']);
     return Container(
         color: Colors.white,
         width: MediaQuery.of(context).size.width,
         alignment: Alignment.bottomCenter,
-        height: 400.0,
+        height: 350.0,
         margin:
-            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 400.0)),
+            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 350.0)),
         child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -404,13 +449,32 @@ class _DriverPage extends State<DriverPage> {
                         shape: BoxShape.circle,
                         image: new DecorationImage(
                             fit: BoxFit.cover,
-                            image: AssetImage('user_dp.png')))),
-                title: Text(
-                  fp.loc_name,
-                  style: TextStyle(
-                      color: Color(MyColors().primary_color),
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.w500),
+                            image: AssetImage('assets/user_dp.png')))),
+                title: Row(
+                  children: <Widget>[
+                    Text(
+                      (button_index == 1) ? fp.loc_name : fp2.loc_name,
+                      style: TextStyle(
+                          color: Color(MyColors().primary_color),
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.navigation),
+                      onPressed: () {
+                        if(button_index == 1){
+                          String nav_url = "https://www.google.com/maps/dir/?api=1&origin=${drivers_location.latitude},${drivers_location.longitude}&destination=${fp.latitude},${fp.longitude}&travelmode=driving&dir_action=navigate";
+                          _launchURL(nav_url);
+                        } else {
+                          String nav_url = "https://www.google.com/maps/dir/?api=1&origin=${drivers_location.latitude},${drivers_location.longitude}&destination=${fp2.latitude},${fp2.longitude}&travelmode=driving&dir_action=navigate";
+                          _launchURL(nav_url);
+                        }
+                      },
+                      color: Color(MyColors().secondary_color),
+                      tooltip: 'Navigate using google map',
+                      iconSize: 18.0,
+                    )
+                  ],
                 ),
                 subtitle: Text(
                   cts['rider_name'].toString(),
@@ -429,6 +493,7 @@ class _DriverPage extends State<DriverPage> {
                         color: Color(MyColors().secondary_color),
                       )),
               ),
+              Container(height: 10.0,),
               Divider(
                 color: Color(MyColors().primary_color),
                 height: 1.0,
@@ -459,10 +524,10 @@ class _DriverPage extends State<DriverPage> {
                 margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 5.0),
                 child: (dialogType == DialogType.driving)
                     ? Text(
-                        '${trip_duration} mins',
+                        '${trip_duration}',
                         style: TextStyle(
                             color: Color(MyColors().primary_color),
-                            fontSize: 20.0,
+                            fontSize: 30.0,
                             fontWeight: FontWeight.w500),
                       )
                     : new Text(''),
@@ -651,38 +716,46 @@ class _DriverPage extends State<DriverPage> {
                 builder: (context) => TripEndedReview(currentTripSnapshot));
             Navigator.pushReplacement(context, route);
           }
+          getTripDetailsIsCalled = true;
         });
       }
     });
   }
 
-  Future<void> addPolyLineToMap(LatLng start, LatLng end) async {
-    List<MyRoute> mRoutes = new List();
-    String url =
-        'https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${end.latitude},${end.longitude}&key=$api_key';
-    http.get(url).then((res) {
-      Map<String, dynamic> resp = json.decode(res.body);
-      List<Map<dynamic, dynamic>> routes = resp['routes'];
-      for (int i = 0; i < routes.length; i++) {
+  void addPolyLineToMap(LatLng start, LatLng end) {
+    try {
+      List<MyRoute> mRoutes = new List();
+      String url =
+          'https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${end.latitude},${end.longitude}&key=$api_key';
+      print('addPolyLineToMap url = $url');
+      http.get(url).then((res) {
+        Map<String, dynamic> resp = json.decode(res.body);
+        //Map<dynamic, dynamic> routes = resp['routes'];
         MyRoute route = new MyRoute();
-        Map<String, dynamic> jsonRoute = routes[i];
-        Map<String, dynamic> overview_polylineJson =
+        Map<dynamic, dynamic> jsonRoute = resp['routes'][0];
+        Map<dynamic, dynamic> overview_polylineJson =
             jsonRoute['overview_polyline'];
         route.points =
             decodePolyLine(overview_polylineJson['points'].toString());
         mRoutes.add(route);
-      }
-      for (MyRoute myR in mRoutes) {
-        PolylineOptions polylineOptions = new PolylineOptions(
-            geodesic: true, color: 0xFF12161E, width: 20.0, visible: true);
+        for (MyRoute myR in mRoutes) {
+          PolylineOptions polylineOptions = new PolylineOptions(
+              geodesic: true,
+              color: 0xFF12161E,
+              width: 20.0,
+              visible: true,
+              points: myR.points);
 
-        for (int i = 0; i < myR.points.length; i++) {
-          polylineOptions.points.add(myR.points[i]);
+//          for (int i = 0; i < myR.points.length; i++) {
+//            polylineOptions.points.add(myR.points[i]);
+//          }
+          mapController.addPolyline(polylineOptions);
+          print('addPolyLineMap poly = added');
         }
-
-        mapController.addPolyline(polylineOptions);
-      }
-    });
+      });
+    } catch (e) {
+      //print('addPolyLineToMap exception = ${e.toString()}');
+    }
   }
 
   List<LatLng> decodePolyLine(final String poly) {
@@ -717,6 +790,7 @@ class _DriverPage extends State<DriverPage> {
       decoded.add(new LatLng(
           (lat / double.parse('100000')), (lng / double.parse('100000'))));
     }
+    //print('decodePolyLine: length = ${decoded.length} and LatLng = ${decoded[0].latitude},${decoded[0].longitude}');
 
     return decoded;
   }
@@ -777,7 +851,7 @@ class _DriverPage extends State<DriverPage> {
               ),
             ),
             new Container(
-              margin: EdgeInsets.only(left: 13.0, right: 13.0),
+              margin: EdgeInsets.only(left: 13.0, right: 13.0, bottom: 10.0),
               child: Padding(
                 padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
                 child: new RaisedButton(
@@ -962,9 +1036,9 @@ class _DriverPage extends State<DriverPage> {
           }
         });
       }
-      setState(() {
-        isGeneralTripsLoaded = true;
-      });
+//      setState(() {
+//        //isGeneralTripsLoaded = true;
+//      });
     });
   }
 

@@ -83,7 +83,7 @@ class _MyTrips extends State<MyTrips> {
                       children: <Widget>[
                         new Text(cts['scheduled_date'].toString(),
                             style: TextStyle(fontWeight: FontWeight.w200)),
-                        new Text('FINISHED',
+                        new Text('RIDE FINISHED',
                             style: TextStyle(
                                 color: Color(MyColors().secondary_color))),
                       ],

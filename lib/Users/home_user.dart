@@ -12,6 +12,7 @@ import 'package:gidi_ride_driver/fragments/driver_home_page.dart';
 import 'package:gidi_ride_driver/fragments/help.dart';
 import 'package:gidi_ride_driver/fragments/legal.dart';
 import 'package:gidi_ride_driver/fragments/payment.dart';
+import 'package:gidi_ride_driver/fragments/payment_chart.dart';
 import 'package:gidi_ride_driver/fragments/settings.dart';
 import 'package:gidi_ride_driver/fragments/trips.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,7 +70,7 @@ class _UserHomePage extends State<UserHomePage> {
         return new MyTrips();
       case 2:
         //_closeAppBar();
-        return new Payment(false);
+        return new PaymentDetails();
       case 3:
         //_closeAppBar();
         return new HelpPage();
@@ -171,7 +172,7 @@ class _UserHomePage extends State<UserHomePage> {
                               image: new DecorationImage(
                                 fit: BoxFit.cover,
                                 image: (_image == null)
-                                    ? AssetImage('user_dp.png')
+                                    ? AssetImage('assets/user_dp.png')
                                     : NetworkImage(_image),
                               ))),
                       otherAccountsPictures: <Widget>[
