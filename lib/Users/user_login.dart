@@ -551,8 +551,8 @@ class _UserLogin extends State<UserLogin> {
           setState(() {
             _inAsyncCall = false;
           });
-          new Utils().neverSatisfied(context, 'Error', 'User does not exist.');
           FirebaseAuth.instance.signOut();
+          new Utils().neverSatisfied(context, 'Error', 'User does not exist.');
         }
       });
     } catch (e) {
