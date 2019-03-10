@@ -35,6 +35,7 @@ class _TripEndedReview extends State<TripEndedReview> {
 
   String total_trip_amount = '';
   DatabaseReference driverEarnRef;
+  double trip_time = 0;
 
   @override
   void initState() {
@@ -172,12 +173,13 @@ class _TripEndedReview extends State<TripEndedReview> {
     DatabaseReference driverRef = FirebaseDatabase.instance
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}');
+    userRef.child('incoming/${ride_details['id'].toString()}').update({
+      'trip_total_price': '₦$total_trip_amount',
+      'trip_duration': '${trip_time.toInt()} mins'
+    });
     userRef
-        .child('incoming/${ride_details['id'].toString()}/status')
-        .update({
-      'current_ride_status': 'review driver',
-      'trip_total_price': '₦$total_trip_amount'
-    }).then((comp) {
+        .child('status')
+        .update({'current_ride_status': 'review driver'}).then((comp) {
       driverRef.child('accepted_trip').remove().then((comp) {
         DateTime dt = DateTime.now();
         String key = '${dt.day},${(dt.month)},${dt.year}';
@@ -247,7 +249,7 @@ class _TripEndedReview extends State<TripEndedReview> {
     transRef.set(transaction.toJSON()).then((c) {
       if (!success) {
         DatabaseReference userRef3 = FirebaseDatabase.instance.reference().child(
-            'users/${ride_details['rider_email'].toString().replaceAll('.', ',')}/payments/${pm.payment_code}');
+            'users/${ride_details['rider_email'].toString().replaceAll('.', ',')}/payments/${pm.id}');
         userRef3.update({'available': false});
       }
       updateTotalEarned();
@@ -318,12 +320,16 @@ class _TripEndedReview extends State<TripEndedReview> {
       Map<String, dynamic> res = json.decode(c.body);
       bool status = res['status'];
       Map<String, dynamic> data = res['data'];
-      String data_status = data['status'];
-      String ref = data['reference'];
-      if (status && data_status == 'success') {
-        saveToTransactions(ref, true);
+      if (data != null) {
+        String data_status = data['status'];
+        String ref = data['reference'];
+        if (status && data_status == 'success') {
+          saveToTransactions(ref, true);
+        } else {
+          saveToTransactions(ref, false);
+        }
       } else {
-        saveToTransactions(ref, false);
+        saveToTransactions('FAILED', false);
       }
     });
   }
@@ -340,8 +346,7 @@ class _TripEndedReview extends State<TripEndedReview> {
 
     double wait_time =
         double.parse('${start_time.difference(arrived_time).inMinutes}');
-    double trip_time =
-        double.parse('${end_time.difference(start_time).inMinutes}');
+    trip_time = double.parse('${end_time.difference(start_time).inMinutes}');
     double trip_distance =
         double.parse(ride_details['trip_distance'].toString().split(' ')[0]);
 

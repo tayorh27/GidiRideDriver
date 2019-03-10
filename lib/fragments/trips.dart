@@ -17,7 +17,22 @@ class MyTrips extends StatefulWidget {
 class _MyTrips extends State<MyTrips> {
   Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   String _email = '';
-  int _Fcount = 0, _Scount = 0;
+  int _Fcount = 0;
+
+  var months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sept",
+    "Oct",
+    "Nov",
+    "Dec"
+  ];
 
   Future<void> performOp() async {
     DatabaseReference _ref1 = FirebaseDatabase.instance
@@ -38,6 +53,9 @@ class _MyTrips extends State<MyTrips> {
     });
   }
 
+  List<dynamic> _tripsSnapshot = new List();
+  List<String> _tripsSnapshotKey = new List();
+
   @override
   void initState() {
     // TODO: implement initState
@@ -48,92 +66,172 @@ class _MyTrips extends State<MyTrips> {
   Widget build(BuildContext context) {
     _prefs.then((pref) {
       setState(() {
-        //_name = pref.getString('fullname');
         _email = pref.getString('email');
       });
-      performOp();
+      loadTrips();
     });
-    return new Scaffold(
-      body: Container(
-        child: (_Fcount > 0) ? buildList() : emptyJob(),
-      ),
+    return DefaultTabController(
+        length: _tripsSnapshot.length,
+        initialIndex:
+            (_tripsSnapshot.length > 0) ? (_tripsSnapshot.length - 1) : 0,
+        child: new Scaffold(
+          appBar: new AppBar(
+            bottom: (_tripsSnapshot.length > 0)
+                ? TabBar(
+                    tabs: getHeaderTabs(),
+                    indicatorColor: Color(MyColors().secondary_color),
+                    labelColor: Colors.white,
+                    isScrollable: true,
+                    indicatorWeight: 2.0,
+                    unselectedLabelColor: Colors.grey,
+                    labelStyle: TextStyle(fontSize: 20.0, letterSpacing: 1.5),
+                    unselectedLabelStyle:
+                        TextStyle(fontSize: 20.0, letterSpacing: 1.5),
+                  )
+                : null,
+          ),
+          body: (_tripsSnapshot.length > 0)
+              ? TabBarView(
+                  children: tabViews(),
+                )
+              : emptyTrip(),
+        ));
+  }
+
+  List<Tab> getHeaderTabs() {
+    List<Tab> mTabs = new List();
+    var months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sept",
+      "Oct",
+      "Nov",
+      "Dec"
+    ];
+    for (String key in _tripsSnapshotKey) {
+      List<String> val = key.split(',');
+      DateTime dateTime =
+          DateTime(int.parse(val[2]), int.parse(val[1]), int.parse(val[0]));
+      String title =
+          '${months[(dateTime.month - 1)]} ${dateTime.day}, ${dateTime.year}';
+      mTabs.add(new Tab(
+        text: title,
+      ));
+    }
+    return mTabs;
+  }
+
+  List<Widget> tabViews() {
+    List<Widget> views = new List();
+    for (int i = 0; i < _tripsSnapshot.length; i++) {
+      Map<dynamic, dynamic> item = _tripsSnapshot[i];
+      views.add(buildList(item));
+    }
+    return views;
+  }
+
+  Widget buildList(Map<dynamic, dynamic> item) {
+    return ListView(
+      scrollDirection: Axis.vertical,
+      shrinkWrap: true,
+      children: buildSubItems(item),
     );
+//    return new FirebaseAnimatedList(
+//        query: FirebaseDatabase.instance
+//            .reference()
+//            .child('drivers/${_email.replaceAll('.', ',')}/trips'),
+//        scrollDirection: Axis.vertical,
+//        itemBuilder: (context, snapshot, animation, index) {
+//          Map<dynamic, dynamic> item = snapshot.value;
+//        });
   }
 
-  Widget buildList() {
-    return new FirebaseAnimatedList(
-        query: FirebaseDatabase.instance
-            .reference()
-            .child('drivers/${_email.replaceAll('.', ',')}/trips'),
-        scrollDirection: Axis.vertical,
-        itemBuilder: (context, snapshot, animation, index) {
-          Map<dynamic, dynamic> item = snapshot.value;
-          return Column(
-            children: buildSubItems(item, animation),
-          );
-        });
-  }
-
-  List<Widget> buildSubItems(
-      Map<dynamic, dynamic> items, Animation<double> animation) {
+  List<Widget> buildSubItems(Map<dynamic, dynamic> items) {
     List<Widget> mWidget = new List();
     items.values.forEach((sub_items) {
       Map<dynamic, dynamic> cts = sub_items['trip_details'];
       FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
-      mWidget.add(new SizeTransition(
-          sizeFactor: animation,
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: new SizedBox(
-              child: new Column(
-                children: <Widget>[
-                  Container(
-                      child: ListTile(
-                    title: Text(fp.loc_name,
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16.0)),
-                    subtitle: new Column(
-                      mainAxisSize: MainAxisSize.max,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        new Container(
-                          height: 5.0,
-                        ),
-                        new Text(sub_items['ride_ended'].toString(),
-                            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0)),
-                        new Container(
-                          height: 5.0,
-                        ),
-                        new Text('RIDE FINISHED',
-                            style: TextStyle(
-                                color: Color(MyColors().secondary_color))),
-                        new Container(
-                          height: 5.0,
-                        ),
-                      ],
+      DateTime dt = DateTime.parse(sub_items['ride_ended'].toString());
+      String date_ended = '${months[(dt.month - 1)]} ${dt.day}, ${dt.year}';
+      mWidget.add(Padding(
+        padding: EdgeInsets.all(20.0),
+        child: new SizedBox(
+          child: new Column(
+            children: <Widget>[
+              Container(
+                  child: ListTile(
+                title: Text(fp.loc_name,
+                    style:
+                        TextStyle(fontWeight: FontWeight.w500, fontSize: 16.0)),
+                subtitle: new Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    new Container(
+                      height: 5.0,
                     ),
-                    trailing: Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.black,
+                    new Text(date_ended,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14.0)),
+                    new Container(
+                      height: 5.0,
                     ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => TripInfo(sub_items)),
-                      );
-                    },
-                  )),
-                  Divider(
-                    height: 1.0,
-                    color: Color(MyColors().button_text_color),
-                  ),
-                ],
+                    new Text('RIDE FINISHED',
+                        style: TextStyle(
+                            color: Color(MyColors().secondary_color))),
+                    new Container(
+                      height: 5.0,
+                    ),
+                  ],
+                ),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.black,
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TripInfo(sub_items)),
+                  );
+                },
+              )),
+              Divider(
+                height: 1.0,
+                color: Color(MyColors().button_text_color),
               ),
-            ),
-          )));
+            ],
+          ),
+        ),
+      ));
     });
     return mWidget;
+  }
+
+  void loadTrips() {
+    DatabaseReference tripRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/trips');
+    tripRef.onValue.listen((data) {
+      _tripsSnapshot.clear();
+      _tripsSnapshotKey.clear();
+      if (data.snapshot.value != null) {
+        Map<dynamic, dynamic> values = data.snapshot.value;
+        values.forEach((key, vals) {
+          setState(() {
+            _tripsSnapshot.add(vals);
+            _tripsSnapshotKey.add('$key');
+          });
+        });
+      }
+    });
   }
 
   void _deleteIncomingOrder(String id) {
@@ -179,7 +277,7 @@ class _MyTrips extends State<MyTrips> {
     );
   }
 
-  Widget emptyJob() {
+  Widget emptyTrip() {
     return new Container(
         child: new Center(
       child: new Column(

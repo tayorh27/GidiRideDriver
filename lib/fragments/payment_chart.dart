@@ -77,45 +77,40 @@ class _PaymentDetails extends State<PaymentDetails> {
         _email = pref.getString('email');
       });
     });
-    performOp();
+    //performOp();
     if (!isTripsLoaded) {
       loadTrips();
     }
     // TODO: implement build
     return DefaultTabController(
         length: _tripsSnapshot.length,
-        initialIndex: (_tripsSnapshot.length - 1),
+        initialIndex:
+            (_tripsSnapshot.length > 0) ? (_tripsSnapshot.length - 1) : 0,
         child: Scaffold(
-          backgroundColor: Color(MyColors().button_text_color),
           appBar: new AppBar(
-            leading: new IconButton(
-                icon: Icon(
-                  Icons.keyboard_arrow_left,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => UserHomePage()));
-                }),
             title: Text(
               'Earned History',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
-            bottom: TabBar(
-              tabs: getHeaderTabs(),
-              indicatorColor: Color(MyColors().secondary_color),
-              labelColor: Colors.white,
-              isScrollable: true,
-              indicatorWeight: 2.0,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: TextStyle(fontSize: 20.0, letterSpacing: 1.5),
-              unselectedLabelStyle:
-                  TextStyle(fontSize: 20.0, letterSpacing: 1.5),
-            ),
+            bottom: (_tripsSnapshot.length > 0)
+                ? TabBar(
+                    tabs: getHeaderTabs(),
+                    indicatorColor: Color(MyColors().secondary_color),
+                    labelColor: Colors.white,
+                    isScrollable: true,
+                    indicatorWeight: 2.0,
+                    unselectedLabelColor: Colors.grey,
+                    labelStyle: TextStyle(fontSize: 20.0, letterSpacing: 1.5),
+                    unselectedLabelStyle:
+                        TextStyle(fontSize: 20.0, letterSpacing: 1.5),
+                  )
+                : null,
           ),
-          body: TabBarView(
-            children: (_Fcount > 0) ? tabViews() : emptyTrip(),
-          ),
+          body: (_tripsSnapshot.length > 0)
+              ? TabBarView(
+                  children: tabViews(),
+                )
+              : emptyTrip(),
         ));
   }
 
@@ -155,15 +150,14 @@ class _PaymentDetails extends State<PaymentDetails> {
       Map<dynamic, dynamic> item = _tripsSnapshot[i];
       List<ChartData> chartData = new List();
       double earned_money = 0;
+      int ind = 1;
       item.values.forEach((sub_items) {
-        int ind = 1;
         Map<dynamic, dynamic> trip_details = sub_items['trip_details'];
         double amount_earned = double.parse(
             trip_details['trip_total_price'].toString().substring(1));
         earned_money = earned_money + amount_earned;
         chartData.add(new ChartData('Trip $ind', amount_earned.toInt()));
         ind = ind + 1;
-        //views.add();
       });
       views.add(buildColumn('$earned_money', chartData));
     }
@@ -172,36 +166,21 @@ class _PaymentDetails extends State<PaymentDetails> {
 
   List<charts.Series> seriesList;
 
-//  factory _PaymentDetails.withSampleData() {
-//    return new SimpleBarChart(
-//      _createSampleData(),
-//      // Disable animations for image tests.
-//      animate: true,
-//    );
-//  }
-
-  List<charts.Series<ChartData, String>> _createChartData(
-      List<ChartData> chartData) {
-//    final data = [
-//      new OrdinalSales('2014', 5),
-//      new OrdinalSales('2015', 25),
-//      new OrdinalSales('2016', 100),
-//      new OrdinalSales('2017', 75),
-//    ];
-
-    return [
-      new charts.Series<ChartData, String>(
-        id: 'Earnings',
-        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
-        domainFn: (ChartData cd, _) => cd.xValue,
-        measureFn: (ChartData cd, _) => cd.yValue,
-        data: chartData,
-      )
-    ];
-  }
-
   Widget buildColumn(String total_amount_earned, List<ChartData> chartData) {
-    seriesList = _createChartData(chartData);
+    //seriesList = _createChartData(chartData);
+    //var data = [new ChartData('Trip 1', 731)];
+    var series = [
+      new charts.Series(
+          id: 'ChartData',
+          colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+          domainFn: (ChartData cd, _) => cd.xValue,
+          measureFn: (ChartData cd, _) => cd.yValue,
+          data: chartData,
+          labelAccessorFn: (ChartData cd, _) =>
+              '${cd.xValue}: \₦${cd.yValue.toString()}',
+          insideLabelStyleAccessorFn: (_, __) => charts.TextStyleSpec(
+              fontSize: 18, color: charts.MaterialPalette.white))
+    ];
 //    var series = [
 //      new charts.Series(
 //        id: 'Earning',
@@ -217,24 +196,21 @@ class _PaymentDetails extends State<PaymentDetails> {
 //      ),
 //    ];
     var chart = new charts.BarChart(
-      seriesList,
+      series,
       animate: true,
-      domainAxis: charts.AxisSpec(
-          showAxisLine: true,
-          renderSpec: charts.GridlineRendererSpec(
-              labelStyle:
-                  charts.TextStyleSpec(color: charts.MaterialPalette.white))),
+      vertical: false,
+      barRendererDecorator: new charts.BarLabelDecorator<String>(),
+      domainAxis:
+          new charts.OrdinalAxisSpec(renderSpec: new charts.NoneRenderSpec()),
     );
 
-    var chartWidget = new SizedBox(
-      height: 200,
-      child: chart,
-    );
+    var chartWidget = new Container(
+        width: MediaQuery.of(context).size.width,
+        height: 350,
+        margin: EdgeInsets.only(left: 20.0, right: 20.0),
+        child: chart);
 
     return Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[buildEarned(total_amount_earned), chartWidget]);
   }
 
@@ -310,30 +286,28 @@ class _PaymentDetails extends State<PaymentDetails> {
     });
   }
 
-  List<Widget> emptyTrip() {
-    return [
-      new Container(
-          child: new Center(
-        child: new Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            new Icon(
-              Icons.cancel,
-              color: Colors.white,
-              size: 48.0,
-            ),
-            new Text(
-              'You have no data yet.',
-              textAlign: TextAlign.center,
-              softWrap: true,
-              style: TextStyle(fontSize: 16.0),
-            )
-          ],
-        ),
-      ))
-    ];
+  Widget emptyTrip() {
+    return new Container(
+        child: new Center(
+      child: new Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          new Icon(
+            Icons.cancel,
+            color: Colors.white,
+            size: 48.0,
+          ),
+          new Text(
+            'You have no data yet.',
+            textAlign: TextAlign.center,
+            softWrap: true,
+            style: TextStyle(fontSize: 16.0),
+          )
+        ],
+      ),
+    ));
   }
 }
 

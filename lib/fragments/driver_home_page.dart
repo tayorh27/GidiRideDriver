@@ -462,7 +462,9 @@ class _DriverPage extends State<DriverPage> {
                   children: <Widget>[
                     Flexible(
                         child: Text(
-                      (button_index == 1) ? fp.loc_name : fp2.loc_name,
+                      (button_index == 0 || button_index == 1)
+                          ? fp.loc_name
+                          : fp2.loc_name,
                       style: TextStyle(
                         color: Color(MyColors().primary_color),
                         fontSize: 18.0,
@@ -532,10 +534,12 @@ class _DriverPage extends State<DriverPage> {
                 ),
                 onTap: _callUser,
               ),
-              Divider(
-                color: Color(MyColors().primary_color),
-                height: 1.0,
-              ),
+              (dialogType == DialogType.driving)
+                  ? Divider(
+                      color: Color(MyColors().primary_color),
+                      height: 1.0,
+                    )
+                  : new Text(''),
               Container(
                 margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 5.0),
                 child: (dialogType == DialogType.driving)
@@ -608,9 +612,7 @@ class _DriverPage extends State<DriverPage> {
     DatabaseReference userRef = FirebaseDatabase.instance.reference().child(
         'users/${cts['rider_email'].toString().replaceAll('.', ',')}/trips');
     if (index == 0) {
-      userRef
-          .child(
-              'incoming/${cts['id'].toString()}/status')
+      userRef.child('status') //${cts['id'].toString()}
           .update({'current_ride_status': 'driver assigned'}).then((comp) {
         new Utils().sendNotification(
             'GidiRide Driver',
@@ -640,10 +642,7 @@ class _DriverPage extends State<DriverPage> {
         'status': 'pickup arrived',
         'current_index': '2'
       }).then((comp) {
-        userRef
-            .child(
-                'incoming/${cts['id'].toString()}/status')
-            .update({'current_ride_status': 'en-route'});
+        userRef.child('status').update({'current_ride_status': 'en-route'});
       });
       addPolyLineToMap(
           drivers_location,
@@ -1054,9 +1053,9 @@ class _DriverPage extends State<DriverPage> {
             setState(() {
               _snapshots.add(vals);
             });
-            playNotification();
           }
         });
+        //playNotification();
       }
 //      setState(() {
 //        //isGeneralTripsLoaded = true;
