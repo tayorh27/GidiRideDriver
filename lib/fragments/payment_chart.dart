@@ -16,6 +16,7 @@ class PaymentDetails extends StatefulWidget {
 class _PaymentDetails extends State<PaymentDetails> {
   Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   String _email = '';
+  int _Fcount = 0;
 
 //  List<PaymentMethods> _methods = new List();
 //  List<GeneralPromotions> _general_promotions = new List();
@@ -37,6 +38,19 @@ class _PaymentDetails extends State<PaymentDetails> {
 
   var paystackPublicKey;
   var paystackSecretKey;
+
+  void performOp() {
+    DatabaseReference _ref1 = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}/trips');
+    _ref1.once().then((val) {
+      if (val.value != null) {
+        setState(() {
+          _Fcount = 1;
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -63,12 +77,14 @@ class _PaymentDetails extends State<PaymentDetails> {
         _email = pref.getString('email');
       });
     });
+    performOp();
     if (!isTripsLoaded) {
       loadTrips();
     }
     // TODO: implement build
     return DefaultTabController(
         length: _tripsSnapshot.length,
+        initialIndex: (_tripsSnapshot.length - 1),
         child: Scaffold(
           backgroundColor: Color(MyColors().button_text_color),
           appBar: new AppBar(
@@ -98,7 +114,7 @@ class _PaymentDetails extends State<PaymentDetails> {
             ),
           ),
           body: TabBarView(
-            children: tabViews(),
+            children: (_Fcount > 0) ? tabViews() : emptyTrip(),
           ),
         ));
   }
@@ -265,6 +281,7 @@ class _PaymentDetails extends State<PaymentDetails> {
                 fontSize: 30.0,
                 fontWeight: FontWeight.w700,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
         )));
@@ -291,6 +308,32 @@ class _PaymentDetails extends State<PaymentDetails> {
         //isTripsLoaded = true;
       });
     });
+  }
+
+  List<Widget> emptyTrip() {
+    return [
+      new Container(
+          child: new Center(
+        child: new Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            new Icon(
+              Icons.cancel,
+              color: Colors.white,
+              size: 48.0,
+            ),
+            new Text(
+              'You have no data yet.',
+              textAlign: TextAlign.center,
+              softWrap: true,
+              style: TextStyle(fontSize: 16.0),
+            )
+          ],
+        ),
+      ))
+    ];
   }
 }
 

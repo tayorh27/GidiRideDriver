@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:android_alarm_manager/android_alarm_manager.dart';
+import 'package:path_provider/path_provider.dart';
 
 //import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
@@ -26,6 +28,7 @@ import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:audioplayer/audioplayer.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 //import 'package:map_view/map_view.dart';
 
 class DriverPage extends StatefulWidget {
@@ -168,7 +171,7 @@ class _DriverPage extends State<DriverPage> {
           bearing: 90.0,
           target: LatLng(lat, lng),
           tilt: 30.0,
-          zoom: 15.0,
+          zoom: 13.0,
         ),
       ));
       mapController.addMarker(MarkerOptions(
@@ -179,7 +182,7 @@ class _DriverPage extends State<DriverPage> {
 
           ///check here
           infoWindowText: InfoWindowText('Your location', '')));
-      if (button_index == 2) {
+      if (button_index > 1) {
         mapController.addMarker(MarkerOptions(
             position: LatLng(double.parse(destination.latitude),
                 double.parse(destination.longitude)),
@@ -207,13 +210,17 @@ class _DriverPage extends State<DriverPage> {
         'latitude': '$lat',
         'longitude': '$lng'
       });
-      if (button_index == 2) {
-        getDistanceDirection(
-            lat, lng, destination.latitude, destination.longitude);
+      if (button_index > 1) {
+        Timer timer = new Timer(Duration(seconds: 5), () {
+          getDistanceDirection(
+              lat, lng, destination.latitude, destination.longitude);
+        });
       }
       if (button_index == 1) {
-        getDistanceDirection(
-            lat, lng, current_location.latitude, current_location.longitude);
+        new Timer(Duration(seconds: 5), () {
+          getDistanceDirection(
+              lat, lng, current_location.latitude, current_location.longitude);
+        });
       }
     }
   }
@@ -394,6 +401,7 @@ class _DriverPage extends State<DriverPage> {
                 fontSize: 30.0,
                 fontWeight: FontWeight.w700,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
         )));
@@ -442,37 +450,43 @@ class _DriverPage extends State<DriverPage> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
               new ListTile(
-                leading: new Container(
-                    width: 60.0,
+                leading: CircleAvatar(
+                  radius: 30.0,
+                  child: Image.asset(
+                    'user_dp.png',
                     height: 60.0,
-                    decoration: new BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: new DecorationImage(
-                            fit: BoxFit.cover,
-                            image: AssetImage('assets/user_dp.png')))),
+                    width: 60.0,
+                  ),
+                ),
                 title: Row(
                   children: <Widget>[
-                    Text(
+                    Flexible(
+                        child: Text(
                       (button_index == 1) ? fp.loc_name : fp2.loc_name,
                       style: TextStyle(
-                          color: Color(MyColors().primary_color),
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w500),
-                    ),
+                        color: Color(MyColors().primary_color),
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    )),
                     IconButton(
                       icon: Icon(Icons.navigation),
                       onPressed: () {
-                        if(button_index == 1){
-                          String nav_url = "https://www.google.com/maps/dir/?api=1&origin=${drivers_location.latitude},${drivers_location.longitude}&destination=${fp.latitude},${fp.longitude}&travelmode=driving&dir_action=navigate";
+                        if (button_index == 1) {
+                          String nav_url =
+                              "https://www.google.com/maps/dir/?api=1&origin=${drivers_location.latitude},${drivers_location.longitude}&destination=${fp.latitude},${fp.longitude}&travelmode=driving&dir_action=navigate";
                           _launchURL(nav_url);
                         } else {
-                          String nav_url = "https://www.google.com/maps/dir/?api=1&origin=${drivers_location.latitude},${drivers_location.longitude}&destination=${fp2.latitude},${fp2.longitude}&travelmode=driving&dir_action=navigate";
+                          String nav_url =
+                              "https://www.google.com/maps/dir/?api=1&origin=${drivers_location.latitude},${drivers_location.longitude}&destination=${fp2.latitude},${fp2.longitude}&travelmode=driving&dir_action=navigate";
                           _launchURL(nav_url);
                         }
                       },
                       color: Color(MyColors().secondary_color),
                       tooltip: 'Navigate using google map',
-                      iconSize: 18.0,
+                      iconSize: 24.0,
                     )
                   ],
                 ),
@@ -493,7 +507,9 @@ class _DriverPage extends State<DriverPage> {
                         color: Color(MyColors().secondary_color),
                       )),
               ),
-              Container(height: 10.0,),
+              Container(
+                height: 10.0,
+              ),
               Divider(
                 color: Color(MyColors().primary_color),
                 height: 1.0,
@@ -594,12 +610,13 @@ class _DriverPage extends State<DriverPage> {
     if (index == 0) {
       userRef
           .child(
-              'incoming/${currentTripSnapshot.value['id'].toString()}/status')
+              'incoming/${cts['id'].toString()}/status')
           .update({'current_ride_status': 'driver assigned'}).then((comp) {
         new Utils().sendNotification(
             'GidiRide Driver',
             'Your driver is coming to your pickup location. Open the app for more details.',
-            cts['rider_msgId'].toString());
+            cts['rider_msgId'].toString(),
+            cts['rider_number'].toString());
         setState(() {
           dialogType = DialogType.driving;
           button_title = 'I have arrived pickup location';
@@ -625,7 +642,7 @@ class _DriverPage extends State<DriverPage> {
       }).then((comp) {
         userRef
             .child(
-                'incoming/${currentTripSnapshot.value['id'].toString()}/status')
+                'incoming/${cts['id'].toString()}/status')
             .update({'current_ride_status': 'en-route'});
       });
       addPolyLineToMap(
@@ -727,7 +744,7 @@ class _DriverPage extends State<DriverPage> {
       List<MyRoute> mRoutes = new List();
       String url =
           'https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${end.latitude},${end.longitude}&key=$api_key';
-      print('addPolyLineToMap url = $url');
+      //print('addPolyLineToMap url = $url');
       http.get(url).then((res) {
         Map<String, dynamic> resp = json.decode(res.body);
         //Map<dynamic, dynamic> routes = resp['routes'];
@@ -750,7 +767,7 @@ class _DriverPage extends State<DriverPage> {
 //            polylineOptions.points.add(myR.points[i]);
 //          }
           mapController.addPolyline(polylineOptions);
-          print('addPolyLineMap poly = added');
+          //print('addPolyLineMap poly = added');
         }
       });
     } catch (e) {
@@ -911,6 +928,9 @@ class _DriverPage extends State<DriverPage> {
                 style: TextStyle(color: Color(MyColors().primary_color)),
               ),
               onPressed: () {
+                setState(() {
+                  _inAsyncCall = true;
+                });
                 _tripAcceptedByDriver(values);
                 Navigator.of(context).pop();
               },
@@ -921,7 +941,7 @@ class _DriverPage extends State<DriverPage> {
     );
   }
 
-  Future<void> _tripAcceptedByDriver(dynamic values) async {
+  void _tripAcceptedByDriver(dynamic values) {
     FavoritePlaces fp = FavoritePlaces.fromJson(values['current_location']);
     FavoritePlaces fp2 = FavoritePlaces.fromJson(values['destination']);
     PaymentMethods pm = (values['card_trip'])
@@ -935,7 +955,7 @@ class _DriverPage extends State<DriverPage> {
     DatabaseReference genRef = FirebaseDatabase.instance
         .reference()
         .child('general_trips/${values['id'].toString()}');
-    await genRef.update({'assigned_driver': _email}).then((comp) {
+    genRef.update({'assigned_driver': _email}).then((comp) {
       DatabaseReference userRef = FirebaseDatabase.instance.reference().child(
           'users/${values['rider_email'].toString().replaceAll('.', ',')}/trips');
       userRef
@@ -984,7 +1004,8 @@ class _DriverPage extends State<DriverPage> {
             new Utils().sendNotification(
                 'GidiRide Booking Status',
                 'Your trip has been accepted by one of our driver. Your ride will be attended to in due time.',
-                values['rider_msgId']);
+                values['rider_msgId'].toString(),
+                values['rider_number'].toString());
             DateTime future_date =
                 DateTime.parse(values['scheduled_date'].toString());
             DateTime now_date = DateTime.now();
@@ -994,6 +1015,7 @@ class _DriverPage extends State<DriverPage> {
                 Duration(seconds: diff), helloAlarmID, alertDriver);
             setState(() {
               driver_has_accepted = true;
+              _inAsyncCall = false;
             });
             _prefs.then((pref) {
               pref.setString('accepted_trip_id', values['id'].toString());
@@ -1055,7 +1077,15 @@ class _DriverPage extends State<DriverPage> {
     });
   }
 
+  Future<ByteData> loadAsset() async {
+    return await rootBundle.load('assets/audio/rush.mp3');
+  }
+
   Future<void> playNotification() async {
-    await audioPlugin.play('assets/audio/rush.mp3', isLocal: true);
+    final file = new File('${(await getTemporaryDirectory()).path}/rush.mp3');
+    await file.writeAsBytes((await loadAsset()).buffer.asUint8List());
+    await audioPlugin.play(file.path, isLocal: true).catchError((error) {
+      print('Audio error: ${error.toString()}');
+    });
   }
 }

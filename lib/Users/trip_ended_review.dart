@@ -81,7 +81,8 @@ class _TripEndedReview extends State<TripEndedReview> {
         progressIndicator: CircularProgressIndicator(),
         color: Color(MyColors().button_text_color),
         child: new Container(
-          color: Color(MyColors().wrapper_color), //primary_color
+          height: MediaQuery.of(context).size.height,
+          color: Color(MyColors().button_text_color), //primary_color
           child: ListView(
             scrollDirection: Axis.vertical,
             children: <Widget>[
@@ -92,7 +93,10 @@ class _TripEndedReview extends State<TripEndedReview> {
                 child: Center(
                     child: new Text(
                   (ride_details['card_trip']) ? 'CARD PAYMENT' : 'CASH PAYMENT',
-                  style: TextStyle(color: Colors.white, fontSize: 16.0),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30.0,
+                      fontWeight: FontWeight.w500),
                 )),
               ),
               new Container(
@@ -102,7 +106,10 @@ class _TripEndedReview extends State<TripEndedReview> {
                 child: Center(
                     child: new Text(
                   calculateTotalPrice(),
-                  style: TextStyle(color: Colors.white, fontSize: 30.0),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 40.0,
+                      fontWeight: FontWeight.w500),
                 )),
               ),
               new Container(
@@ -112,26 +119,32 @@ class _TripEndedReview extends State<TripEndedReview> {
                   (ride_details['card_trip'])
                       ? 'Payment will be deducted automatically'
                       : 'Collect cash payment from rider',
-                  style: TextStyle(color: Colors.white, fontSize: 14.0),
+                  style: TextStyle(color: Colors.white, fontSize: 18.0),
+                  textAlign: TextAlign.center,
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.only(
-                    top: 0.0, left: 20.0, right: 20.0, bottom: 20.0),
-                child: new RaisedButton(
-                  child: new Text('DONE',
-                      style: new TextStyle(
-                          fontSize: 18.0,
-                          color: Color(MyColors().button_text_color))),
-                  color: Color(MyColors().secondary_color),
-                  disabledColor: Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                  ),
-                  onPressed: _doneClicked,
-                  padding: EdgeInsets.all(15.0),
-                ),
-              ),
+              Container(
+                  alignment: Alignment.bottomCenter,
+                  width: MediaQuery.of(context).size.width,
+                  margin: EdgeInsets.only(
+                      top: (MediaQuery.of(context).size.height / 3)),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                        top: 0.0, left: 0.0, right: 0.0, bottom: 20.0),
+                    child: new RaisedButton(
+                      child: new Text('FINISH RIDE',
+                          style: new TextStyle(
+                              fontSize: 18.0,
+                              color: Color(MyColors().button_text_color))),
+                      color: Color(MyColors().secondary_color),
+                      disabledColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                      ),
+                      onPressed: _doneClicked,
+                      padding: EdgeInsets.all(15.0),
+                    ),
+                  )),
             ],
           ),
         ),
@@ -160,7 +173,7 @@ class _TripEndedReview extends State<TripEndedReview> {
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}');
     userRef
-        .child('incoming/${widget.snapshot.value['id'].toString()}/status')
+        .child('incoming/${ride_details['id'].toString()}/status')
         .update({
       'current_ride_status': 'review driver',
       'trip_total_price': '₦$total_trip_amount'
@@ -290,13 +303,12 @@ class _TripEndedReview extends State<TripEndedReview> {
     Navigator.pushReplacement(context, route);
   }
 
-  Future<void> deductMoneyFromUser() async {
+  void deductMoneyFromUser() {
     Map<dynamic, dynamic> ride_details = widget.snapshot.value['trip_details'];
     PaymentMethods pm = PaymentMethods.fromJson(ride_details['payment_method']);
-    await http.post('https://api.paystack.co/transaction/charge_authorization',
+    http.post('https://api.paystack.co/transaction/charge_authorization',
         headers: {
-          'Authorization': 'Bearer $paystackSecretKey',
-          'Content-Type': 'application/json'
+          'Authorization': 'Bearer $paystackSecretKey'
         },
         body: {
           'authorization_code': pm.payment_code,

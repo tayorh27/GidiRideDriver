@@ -172,7 +172,7 @@ class _UserHomePage extends State<UserHomePage> {
                               image: new DecorationImage(
                                 fit: BoxFit.cover,
                                 image: (_image == null)
-                                    ? AssetImage('assets/user_dp.png')
+                                    ? AssetImage('user_dp.png')
                                     : NetworkImage(_image),
                               ))),
                       otherAccountsPictures: <Widget>[

@@ -23,12 +23,12 @@ class _MyTrips extends State<MyTrips> {
     DatabaseReference _ref1 = FirebaseDatabase.instance
         .reference()
         .child('drivers/${_email.replaceAll('.', ',')}/trips');
-    await _ref1.once().asStream().toList().then((val) {
+    await _ref1.once().then((val) {
       //.asStream().length.
-      if (val != null) {
+      if (val.value != null) {
         setState(() {
           //Map map = val.value;
-          _Fcount = val.length;
+          _Fcount = 1;
         });
       } else {
         setState(() {
@@ -67,28 +67,52 @@ class _MyTrips extends State<MyTrips> {
             .child('drivers/${_email.replaceAll('.', ',')}/trips'),
         scrollDirection: Axis.vertical,
         itemBuilder: (context, snapshot, animation, index) {
-          //String status = snapshot.value['status'].toString();
-          Map<dynamic, dynamic> cts = snapshot.value['trip_details'];
-          FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
-          return new SizeTransition(
-            sizeFactor: animation,
+          Map<dynamic, dynamic> item = snapshot.value;
+          return Column(
+            children: buildSubItems(item, animation),
+          );
+        });
+  }
+
+  List<Widget> buildSubItems(
+      Map<dynamic, dynamic> items, Animation<double> animation) {
+    List<Widget> mWidget = new List();
+    items.values.forEach((sub_items) {
+      Map<dynamic, dynamic> cts = sub_items['trip_details'];
+      FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
+      mWidget.add(new SizeTransition(
+          sizeFactor: animation,
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
             child: new SizedBox(
               child: new Column(
                 children: <Widget>[
                   Container(
                       child: ListTile(
                     title: Text(fp.loc_name,
-                        style: TextStyle(fontWeight: FontWeight.w500)),
+                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16.0)),
                     subtitle: new Column(
+                      mainAxisSize: MainAxisSize.max,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
-                        new Text(cts['scheduled_date'].toString(),
-                            style: TextStyle(fontWeight: FontWeight.w200)),
+                        new Container(
+                          height: 5.0,
+                        ),
+                        new Text(sub_items['ride_ended'].toString(),
+                            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0)),
+                        new Container(
+                          height: 5.0,
+                        ),
                         new Text('RIDE FINISHED',
                             style: TextStyle(
                                 color: Color(MyColors().secondary_color))),
+                        new Container(
+                          height: 5.0,
+                        ),
                       ],
                     ),
-                    leading: Icon(
+                    trailing: Icon(
                       Icons.arrow_forward_ios,
                       color: Colors.black,
                     ),
@@ -96,7 +120,7 @@ class _MyTrips extends State<MyTrips> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => TripInfo(snapshot)),
+                            builder: (context) => TripInfo(sub_items)),
                       );
                     },
                   )),
@@ -107,8 +131,9 @@ class _MyTrips extends State<MyTrips> {
                 ],
               ),
             ),
-          );
-        });
+          )));
+    });
+    return mWidget;
   }
 
   void _deleteIncomingOrder(String id) {

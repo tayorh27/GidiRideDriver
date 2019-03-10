@@ -66,6 +66,8 @@ dev_dependencies:
   flutter_swiper: ^1.1.4
   #fcharts: ^0.0.10
   charts_flutter: ^0.6.0
+  flutter_local_notifications: ^0.5.2
+  path_provider: ^0.5.0+1
 
 
 # For information on the generic Dart part of this file, see the

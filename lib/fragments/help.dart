@@ -77,19 +77,6 @@ class _HelpPage extends State<HelpPage> {
     // TODO: implement build
     return new Scaffold(
         backgroundColor: Color(MyColors().primary_color),
-        appBar: new AppBar(
-          title: new Text('Help',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 25.0,
-              )),
-          leading: new IconButton(
-              icon: Icon(Icons.keyboard_arrow_left),
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => UserHomePage()));
-              }),
-        ),
         body: new Container(
           margin: EdgeInsets.only(top: 20.0),
           child: new ListView(

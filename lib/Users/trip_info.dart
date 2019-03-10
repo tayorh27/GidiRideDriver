@@ -6,7 +6,7 @@ import 'package:gidi_ride_driver/Utility/MyColors.dart';
 import 'package:zendesk/zendesk.dart';
 
 class TripInfo extends StatefulWidget {
-  final DataSnapshot snapshot;
+  final dynamic snapshot;
 
   TripInfo(this.snapshot);
 
@@ -41,7 +41,7 @@ class _TripInfo extends State<TripInfo> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    cts = widget.snapshot.value['trip_details'];
+    cts = widget.snapshot['trip_details'];
     initZendesk();
   }
 
@@ -64,7 +64,7 @@ class _TripInfo extends State<TripInfo> {
             }),
       ),
       body: new Container(
-        margin: EdgeInsets.only(top: 20.0),
+        margin: EdgeInsets.only(top: 5.0),
         child: ListView(
           scrollDirection: Axis.vertical,
           children: <Widget>[
@@ -150,6 +150,13 @@ class _TripInfo extends State<TripInfo> {
                     fontSize: 16.0,
                     fontWeight: FontWeight.w500),
               ),
+              trailing: Text(
+                cts['trip_total_price'],
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.w900),
+              ),
             ),
             new Container(
               color: Color(MyColors().button_text_color),
@@ -198,15 +205,14 @@ class _TripInfo extends State<TripInfo> {
   }
 
   String getPaymentMethodNumber() {
-    PaymentMethods pm =
-        PaymentMethods.fromJson(widget.snapshot.value['payment_method']);
+    PaymentMethods pm = PaymentMethods.fromJson(cts['payment_method']);
     return pm.number;
   }
 
   String buildMapStaticUrl() {
     FavoritePlaces fp_start = FavoritePlaces.fromJson(cts['current_location']);
     FavoritePlaces fp_end = FavoritePlaces.fromJson(cts['destination']);
-    return 'https://maps.googleapis.com/maps/api/staticmap?center=${fp_start.latitude},${fp_start.longitude}&zoom=15&size=300x150&markers=size:tiny%7Ccolor:green%7C${fp_start.latitude},${fp_start.longitude}&markers=size:tiny%7Ccolor:red%7C${fp_end.latitude},${fp_end.longitude}&key=$api_key';
+    return 'https://maps.googleapis.com/maps/api/staticmap?center=${fp_start.latitude},${fp_start.longitude}&zoom=15&size=${(MediaQuery.of(context).size.width - 40).toInt()}x150&markers=size:tiny%7Ccolor:green%7C${fp_start.latitude},${fp_start.longitude}&markers=size:tiny%7Ccolor:red%7C${fp_end.latitude},${fp_end.longitude}&key=$api_key';
   }
 
 //  Future<void> getDriverInfo() async {

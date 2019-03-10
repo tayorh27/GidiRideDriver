@@ -19,6 +19,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class UserLogin extends StatefulWidget {
   @override
@@ -95,6 +96,10 @@ class _UserLogin extends State<UserLogin> {
   getTokenAndDeviceInfo() async {
     _firebaseMessaging.getToken().then((token) {
       msgId = token;
+    });
+
+    _firebaseMessaging.configure(onMessage: (data){
+      //FlutterLocalNotificationsPlugin
     });
 
     try {
