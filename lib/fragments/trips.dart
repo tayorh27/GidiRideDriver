@@ -70,6 +70,28 @@ class _MyTrips extends State<MyTrips> {
       });
       loadTrips();
     });
+    return MaterialApp(
+      color: Color(MyColors().primary_color),
+      theme: new ThemeData(
+          fontFamily: 'Lato',
+          primarySwatch: MaterialColor(0xFF21252E, <int, Color>{
+            50: const Color(0xFF21252E),
+            100: const Color(0xFF21252E),
+            200: const Color(0xFF21252E),
+            300: const Color(0xFF21252E),
+            400: const Color(0xFF21252E),
+            500: const Color(0xFF21252E),
+            600: const Color(0xFF21252E),
+            700: const Color(0xFF21252E),
+            800: const Color(0xFF21252E),
+            900: const Color(0xFF21252E),
+          })),
+      debugShowCheckedModeBanner: false,
+      home: buildTabs(),
+    );
+  }
+
+  Widget buildTabs() {
     return DefaultTabController(
         length: _tripsSnapshot.length,
         initialIndex:
@@ -131,16 +153,16 @@ class _MyTrips extends State<MyTrips> {
     List<Widget> views = new List();
     for (int i = 0; i < _tripsSnapshot.length; i++) {
       Map<dynamic, dynamic> item = _tripsSnapshot[i];
-      views.add(buildList(item));
+      views.add(buildList(i, item));
     }
     return views;
   }
 
-  Widget buildList(Map<dynamic, dynamic> item) {
+  Widget buildList(int key, Map<dynamic, dynamic> item) {
     return ListView(
       scrollDirection: Axis.vertical,
       shrinkWrap: true,
-      children: buildSubItems(item),
+      children: buildSubItems(key, item),
     );
 //    return new FirebaseAnimatedList(
 //        query: FirebaseDatabase.instance
@@ -152,13 +174,30 @@ class _MyTrips extends State<MyTrips> {
 //        });
   }
 
-  List<Widget> buildSubItems(Map<dynamic, dynamic> items) {
+  List<Widget> buildSubItems(int key, Map<dynamic, dynamic> items) {
+    List<String> val = _tripsSnapshotKey[key].split(',');
+    DateTime dateTime =
+        DateTime(int.parse(val[2]), int.parse(val[1]), int.parse(val[0]));
+    String title =
+        '${months[(dateTime.month - 1)]} ${dateTime.day}, ${dateTime.year}';
     List<Widget> mWidget = new List();
     items.values.forEach((sub_items) {
       Map<dynamic, dynamic> cts = sub_items['trip_details'];
       FavoritePlaces fp = FavoritePlaces.fromJson(cts['current_location']);
       DateTime dt = DateTime.parse(sub_items['ride_ended'].toString());
       String date_ended = '${months[(dt.month - 1)]} ${dt.day}, ${dt.year}';
+      mWidget.add(
+        Container(
+          margin: EdgeInsets.all(10.0),
+          child: Text(
+            title,
+            style: TextStyle(
+                color: Color(MyColors().primary_color),
+                fontSize: 18.0,
+                fontWeight: FontWeight.w500),
+          ),
+        ),
+      );
       mWidget.add(Padding(
         padding: EdgeInsets.all(20.0),
         child: new SizedBox(
@@ -183,9 +222,14 @@ class _MyTrips extends State<MyTrips> {
                     new Container(
                       height: 5.0,
                     ),
-                    new Text('RIDE FINISHED',
+                    new Text(
+                        (cts['status'].toString() == '0')
+                            ? 'RIDE CANCELED'
+                            : 'RIDE FINISHED',
                         style: TextStyle(
-                            color: Color(MyColors().secondary_color))),
+                            color: (cts['status'].toString() == '0')
+                                ? Colors.red
+                                : Color(MyColors().secondary_color))),
                     new Container(
                       height: 5.0,
                     ),

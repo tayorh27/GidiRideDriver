@@ -206,7 +206,7 @@ class _TripEndedReview extends State<TripEndedReview> {
             'card_trip': (ride_details['card_trip']) ? true : false,
             'promo_used': (gp != null) ? true : false,
             'scheduled_date': ride_details['scheduled_date'].toString(),
-            'status': 'incoming',
+            'status': '1',
             'created_date': ride_details['created_date'].toString(),
             'price_range': ride_details['price_range'].toString(),
             'trip_total_price': '₦$total_trip_amount',

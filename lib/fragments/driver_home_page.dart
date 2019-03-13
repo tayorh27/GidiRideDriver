@@ -38,8 +38,8 @@ class DriverPage extends StatefulWidget {
 
 enum DialogType { request, driving }
 
-const kGoogleApiKey = "AIzaSyBEtkYnNolbg_c7aKZkFuqlq_V_4TIyveI";
-const api_key = 'AIzaSyBEtkYnNolbg_c7aKZkFuqlq_V_4TIyveI';
+const kGoogleApiKey = "AIzaSyCPSnicnVW3upwwp5Q_MgOkh7FhP3-ab1I";
+const api_key = 'AIzaSyCPSnicnVW3upwwp5Q_MgOkh7FhP3-ab1I';
 places.GoogleMapsPlaces _places =
     places.GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
@@ -159,7 +159,9 @@ class _DriverPage extends State<DriverPage> {
           draggable: false,
           icon: BitmapDescriptor.defaultMarker,
           infoWindowText: InfoWindowText('Your location', '')));
-      getMapLocation(lat, lng);
+      //Timer timer = new Timer(Duration(seconds: 10), () {
+        getMapLocation(lat, lng);
+      //});
     }
     if (dialogType == DialogType.driving) {
       Map<dynamic, dynamic> cts = currentTripSnapshot.value['trip_details'];
@@ -178,7 +180,9 @@ class _DriverPage extends State<DriverPage> {
           position: LatLng(lat, lng),
           alpha: 1.0,
           draggable: false,
-          icon: BitmapDescriptor.fromAsset('assets/map_car.png'),
+          icon: (cts['vehicle_type'].toString().toLowerCase() == 'car')
+              ? BitmapDescriptor.fromAsset('assets/gidicar.png')
+              : BitmapDescriptor.fromAsset('assets/gidibike.png'),
 
           ///check here
           infoWindowText: InfoWindowText('Your location', '')));
@@ -392,7 +396,7 @@ class _DriverPage extends State<DriverPage> {
                       color: Color(MyColors().secondary_color), width: 2.0),
                   bottom: BorderSide(
                       color: Color(MyColors().secondary_color), width: 2.0)),
-              borderRadius: BorderRadius.all(Radius.circular(20.0))),
+              borderRadius: BorderRadius.all(Radius.circular(30.0))),
           child: Center(
             child: Text(
               total_amount_earned,
@@ -408,14 +412,20 @@ class _DriverPage extends State<DriverPage> {
   }
 
   Widget buildSliderForTrips() {
-    return new SizedBox(
+    return new Container(
         height: 220.0,
         child: new Swiper(
           itemCount: _snapshots.length,
           autoplay: false,
           loop: false,
           itemBuilder: (BuildContext context, int index) {
-            return new Column(children: carouselChildren());
+            //return new Column(children: carouselChildren());
+            return new Wrap(
+              runSpacing: 6.0,
+              children: _snapshots.map((snap){
+                return _carouselChildren1(snap);
+              }).toList(),
+            );
           },
           scrollDirection: Axis.horizontal,
           viewportFraction: 0.8,
@@ -441,9 +451,9 @@ class _DriverPage extends State<DriverPage> {
         color: Colors.white,
         width: MediaQuery.of(context).size.width,
         alignment: Alignment.bottomCenter,
-        height: 350.0,
+        height: 370.0,
         margin:
-            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 350.0)),
+            EdgeInsets.only(top: (MediaQuery.of(context).size.height - 370.0)),
         child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -544,7 +554,7 @@ class _DriverPage extends State<DriverPage> {
                 margin: EdgeInsets.only(left: 13.0, right: 13.0, top: 5.0),
                 child: (dialogType == DialogType.driving)
                     ? Text(
-                        '${trip_duration}',
+                        '$trip_duration',
                         style: TextStyle(
                             color: Color(MyColors().primary_color),
                             fontSize: 30.0,
@@ -584,7 +594,122 @@ class _DriverPage extends State<DriverPage> {
                   ),
                 ),
               ),
+              Container(
+                child: Center(
+                  child: new FlatButton(
+                    onPressed: () {
+                      _confirmCancelTrip();
+                    },
+                    child: new Text('Cancel Trip',
+                        style: new TextStyle(
+                            fontSize: 14.0,
+                            color: Color(MyColors().button_text_color))),
+                  ),
+                ),
+              ),
             ]));
+  }
+
+  void _confirmCancelTrip() {
+    showDialog<Null>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return new AlertDialog(
+          title: new Text('Confirmation'),
+          content: new SingleChildScrollView(
+            child: new ListBody(
+              children: <Widget>[
+                new Text('Are you sure you want to cancel this trip'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            new FlatButton(
+              child: new Text(
+                'Continue',
+                style: TextStyle(color: Color(MyColors().primary_color)),
+              ),
+              onPressed: () {
+                setState(() {
+                  dialogType = DialogType.request;
+                  driver_has_accepted = false;
+                  driver_delivery_item = false;
+                  driver_going_to_pickup = false;
+                  _inAsyncCall = true;
+                });
+                cancelTripForDriver();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void cancelTripForDriver() {
+    Map<dynamic, dynamic> ride_details =
+        currentTripSnapshot.value['trip_details'];
+    FavoritePlaces fp =
+        FavoritePlaces.fromJson(ride_details['current_location']);
+    FavoritePlaces fp2 = FavoritePlaces.fromJson(ride_details['destination']);
+    PaymentMethods pm = (ride_details['card_trip'])
+        ? PaymentMethods.fromJson(ride_details['payment_method'])
+        : null;
+    GeneralPromotions gp = (ride_details['promo_used'])
+        ? GeneralPromotions.fromJson(ride_details['promotions'])
+        : null;
+    Fares fares = Fares.fromJson(ride_details['fare']);
+    DatabaseReference driverRef = FirebaseDatabase.instance
+        .reference()
+        .child('drivers/${_email.replaceAll('.', ',')}');
+    driverRef.child('accepted_trip').remove().then((comp) {
+      DateTime dt = DateTime.now();
+      String key = '${dt.day},${(dt.month)},${dt.year}';
+      driverRef.child('trips/$key').push().set({
+        'id': '${ride_details['id'].toString()}',
+        'status': '${currentTripSnapshot.value['status'].toString()}',
+        'current_index':
+            '${currentTripSnapshot.value['current_index'].toString()}',
+        'current_location_reached':
+            '${currentTripSnapshot.value['current_location_reached'].toString()}',
+        'ride_started':
+            '${currentTripSnapshot.value['ride_started'].toString()}',
+        'ride_ended': '${currentTripSnapshot.value['ride_ended'].toString()}',
+        'scheduled_reached':
+            '${currentTripSnapshot.value['scheduled_reached']}',
+        'trip_details': {
+          'id': ride_details['id'].toString(),
+          'current_location': fp.toJSON(),
+          'destination': fp2.toJSON(),
+          'trip_distance': ride_details['trip_distance'],
+          'trip_duration': ride_details['trip_duration'],
+          'payment_method': (ride_details['card_trip']) ? pm.toJSON() : 'cash',
+          'vehicle_type': ride_details['vehicle_type'],
+          'promotion': (gp != null) ? gp.toJSON() : 'no_promo',
+          'card_trip': (ride_details['card_trip']) ? true : false,
+          'promo_used': (gp != null) ? true : false,
+          'scheduled_date': ride_details['scheduled_date'].toString(),
+          'status': '0',
+          'created_date': ride_details['created_date'].toString(),
+          'price_range': ride_details['price_range'].toString(),
+          'trip_total_price': '₦0.00',
+          'fare': fares.toJSON(),
+          'assigned_driver': _email,
+          'rider_email': ride_details['rider_email'].toString(),
+          'rider_name': ride_details['rider_name'].toString(),
+          'rider_number': ride_details['rider_number'].toString(),
+          'rider_msgId': ride_details['rider_msgId'].toString()
+        }
+      }).then((comp) {}); //debit and if promo and total earn
+    });
   }
 
   void _callUser() {
@@ -809,6 +934,87 @@ class _DriverPage extends State<DriverPage> {
     //print('decodePolyLine: length = ${decoded.length} and LatLng = ${decoded[0].latitude},${decoded[0].longitude}');
 
     return decoded;
+  }
+
+  Widget _carouselChildren1(dynamic snap) {
+    FavoritePlaces fp = FavoritePlaces.fromJson(snap['current_location']);
+    DateTime scheduled_date =
+    DateTime.parse(snap['scheduled_date'].toString());//
+    var months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sept",
+      "Oct",
+      "Nov",
+      "Dec"
+    ];
+    return Container(
+      color: Color(MyColors().primary_color),
+      height: 220.0,
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          new ListTile(
+            title: new Text(
+              'Pickup location',
+              style: TextStyle(color: Colors.white, fontSize: 16.0),
+            ),
+            subtitle: new Text(
+              fp.loc_name,
+              style: TextStyle(color: Colors.white, fontSize: 14.0),
+            ),
+            leading: Icon(
+              Icons.my_location,
+              color: Colors.green,
+            ),
+          ),
+          new ListTile(
+            title: new Text(
+              'Scheduled for',
+              style: TextStyle(color: Colors.white, fontSize: 16.0),
+            ),
+            subtitle: new Text(
+              '${months[(scheduled_date.month - 1)]}.${scheduled_date.day}.${scheduled_date.year} ${scheduled_date.hour}:${scheduled_date.minute}',
+              style: TextStyle(color: Colors.white, fontSize: 14.0),
+            ),
+            leading: Icon(
+              Icons.date_range,
+              color: Colors.white,
+            ),
+          ),
+          new Container(
+            margin: EdgeInsets.only(left: 13.0, right: 13.0, bottom: 10.0),
+            child: Padding(
+              padding: EdgeInsets.only(top: 0.0, left: 0.0, right: 0.0),
+              child: new RaisedButton(
+                child: new Text('Accept Trip',
+                    style: new TextStyle(
+                        fontSize: 18.0,
+                        color: Color(MyColors().button_text_color))),
+                color: Color(MyColors().secondary_color),
+                disabledColor: Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                ),
+                onPressed: () {
+                  _acceptTrip(snap);
+                },
+                //buttonDisabled
+                padding: EdgeInsets.all(15.0),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   List<Widget> carouselChildren() {
