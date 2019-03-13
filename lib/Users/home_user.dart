@@ -19,15 +19,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class UserHomePage extends StatefulWidget {
   final drawerItems = [
-    new DrawerItem("Home", Image.asset('trips.png'), new Text('')),
-    new DrawerItem("Your Trips", Image.asset('trips.png'), new Text('')),
-    new DrawerItem("Payment", Image.asset('payment.png'), new Text('')),
-    new DrawerItem("Help", Image.asset('help.png'), new Text('')),
+    new DrawerItem("Home", sidebarIcons(innerIcon: Icons.home), new Text('')),
+    new DrawerItem("Your Trips", sidebarIcons(innerIcon: Icons.directions), new Text('')),
+    new DrawerItem("Payment", sidebarIcons(innerIcon: Icons.payment), new Text('')),
+    new DrawerItem("Help", sidebarIcons(innerIcon: Icons.help), new Text('')),
     //new DrawerItem("Free Rides", Image.asset('free_rides.png'), new Text('')),
-    new DrawerItem("Settings", Image.asset('settings.png'), new Text('')),
+    new DrawerItem("Settings", sidebarIcons(innerIcon: Icons.settings), new Text('')),
     new DrawerItem(
         "Legal",
-        Image.asset('legal.png'),
+        sidebarIcons(innerIcon: Icons.pages),
         new Text(
           'v1.0',
           style: TextStyle(color: Colors.white),
@@ -36,6 +36,22 @@ class UserHomePage extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() => _UserHomePage();
+}
+
+Widget sidebarIcons({IconData innerIcon}) {
+  return Container(
+    width: 39.0,
+    height: 39.0,
+    decoration: new BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: Color(MyColors().secondary_color), width: 1.0),
+    ),
+    child: Icon(
+      innerIcon,
+      color: Colors.white,
+      size: 18.0,
+    ),
+  );
 }
 
 class DrawerItem {

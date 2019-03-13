@@ -189,6 +189,7 @@ class _MyTrips extends State<MyTrips> {
       mWidget.add(
         Container(
           margin: EdgeInsets.all(10.0),
+          alignment: Alignment.center,
           child: Text(
             title,
             style: TextStyle(
@@ -329,8 +330,10 @@ class _MyTrips extends State<MyTrips> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          new Image.asset(
-            'header_logo.png',
+          new Icon(
+            Icons.cancel,
+            color: Color(MyColors().primary_color),
+            size: 64.0,
           ),
           new Text(
             'You have no data yet.',

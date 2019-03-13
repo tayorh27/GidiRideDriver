@@ -245,13 +245,17 @@ class _PaymentDetails extends State<PaymentDetails> {
 
     var chartWidget = new Container(
         width: MediaQuery.of(context).size.width,
-        height: 350,
-        margin: EdgeInsets.only(left: 20.0, right: 20.0),
+        height: 325,
+        margin: EdgeInsets.only(left: 20.0, right: 20.0, bottom: 50.0),
         child: chart);
 
-    return Column(children: <Widget>[
+    return ListView(
+      scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        children: <Widget>[
       Container(
-        margin: EdgeInsets.all(10.0),
+        margin: EdgeInsets.only(top: 10.0),
+        alignment: Alignment.center,
         child: Text(
           title,
           style: TextStyle(

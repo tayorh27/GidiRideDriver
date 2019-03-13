@@ -37,6 +37,10 @@ class _TripEndedReview extends State<TripEndedReview> {
   DatabaseReference driverEarnRef;
   double trip_time = 0;
 
+  FavoritePlaces fp;
+  FavoritePlaces fp2;
+  PaymentMethods pm;
+
   @override
   void initState() {
     // TODO: implement initState
@@ -155,10 +159,9 @@ class _TripEndedReview extends State<TripEndedReview> {
 
   Future<void> _doneClicked() async {
     Map<dynamic, dynamic> ride_details = widget.snapshot.value['trip_details'];
-    FavoritePlaces fp =
-        FavoritePlaces.fromJson(ride_details['current_location']);
-    FavoritePlaces fp2 = FavoritePlaces.fromJson(ride_details['destination']);
-    PaymentMethods pm = (ride_details['card_trip'])
+    fp = FavoritePlaces.fromJson(ride_details['current_location']);
+    fp2 = FavoritePlaces.fromJson(ride_details['destination']);
+    pm = (ride_details['card_trip'])
         ? PaymentMethods.fromJson(ride_details['payment_method'])
         : null;
     GeneralPromotions gp = (ride_details['promo_used'])
@@ -256,13 +259,38 @@ class _TripEndedReview extends State<TripEndedReview> {
       if (isPromoUsed) {
         _promoUsed();
       } else {
-        setState(() {
-          _inAsyncCall = false;
-        });
-        new Utils().showToast('Thank you for choosing GidiRide', false);
-        Route route = MaterialPageRoute(builder: (context) => UserHomePage());
-        Navigator.pushReplacement(context, route);
+        sendReceiptToDriver();
       }
+    });
+  }
+
+  void sendReceiptToDriver() {
+    Map<dynamic, dynamic> ride_details = widget.snapshot.value['trip_details'];
+    String subj = "GidiRide Receipt";
+    DateTime dt = DateTime.parse(ride_details['scheduled_date'].toString());
+    var days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ];
+    String day = 'Your GidiRide Trip on ${days[(dt.weekday - 1)]}';
+    String payment_type = (pm == null) ? 'Cash' : '•••• ${pm.number}';
+    String total_amount = ride_details['trip_total_price'].toString();
+    String trip_distance = ride_details['trip_distance'].toString();
+    String trip_duration = ride_details['trip_duration'].toString();
+    var url =
+        "http://gidiride.ng/emailsending/receipt_driver.php?subject=$subj&sub_subject=$day&payment_type=$payment_type&total_amount=$total_amount&trip_distance=$trip_distance&trip_duration=$trip_duration&current_location=${fp.loc_address}&destination=${fp2.loc_address}&rider_name=${ride_details['rider_name'].toString()}";
+    http.get(url).then((response) {
+      setState(() {
+        _inAsyncCall = false;
+      });
+      new Utils().showToast('Thank you for choosing GidiRide', false);
+      Route route = MaterialPageRoute(builder: (context) => UserHomePage());
+      Navigator.pushReplacement(context, route);
     });
   }
 
@@ -297,12 +325,7 @@ class _TripEndedReview extends State<TripEndedReview> {
       }
     }
 
-    setState(() {
-      _inAsyncCall = false;
-    });
-    new Utils().showToast('Thank you for choosing GidiRide', false);
-    Route route = MaterialPageRoute(builder: (context) => UserHomePage());
-    Navigator.pushReplacement(context, route);
+    sendReceiptToDriver();
   }
 
   void deductMoneyFromUser() {
